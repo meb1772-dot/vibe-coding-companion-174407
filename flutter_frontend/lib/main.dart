@@ -1,54 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_frontend/theme/ocean_theme.dart';
+import 'package:flutter_frontend/screens/reader_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  // Entry point: wire providers (placeholders for now) and run app.
+  runApp(const AppRoot());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class AppRoot extends StatelessWidget {
+  const AppRoot({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'AI Build Tool',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'flutter_frontend'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'flutter_frontend App is being generated...',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 20),
-            CircularProgressIndicator(),
-          ],
-        ),
+    // Placeholder MultiProvider wiring to be filled later with real state.
+    return MultiProvider(
+      providers: const [
+        // Add providers here later, e.g. ChangeNotifierProvider(create: (_) => ReaderState()),
+      ],
+      child: MaterialApp(
+        title: 'Vibe Coding Companion',
+        theme: OceanTheme.theme,
+        // Use InheritedMediaQuery for responsive behavior across platforms if needed.
+        // In MaterialApp v3, this is not a direct parameter; wrap the app in MediaQuery if needed elsewhere.
+        // Set initial route and onGenerateRoute for navigation.
+        initialRoute: '/reader',
+        onGenerateRoute: (settings) {
+          switch (settings.name) {
+            case '/reader':
+              return MaterialPageRoute<void>(
+                builder: (_) => const ReaderScreen(),
+                settings: settings,
+              );
+            default:
+              return MaterialPageRoute<void>(
+                builder: (_) => const ReaderScreen(),
+                settings: settings,
+              );
+          }
+        },
       ),
     );
   }

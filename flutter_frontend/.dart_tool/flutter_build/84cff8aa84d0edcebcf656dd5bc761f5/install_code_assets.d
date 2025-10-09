@@ -1,0 +1,1 @@
+ /home/kavia/workspace/code-generation/vibe-coding-companion-174407/flutter_frontend/.dart_tool/flutter_build/84cff8aa84d0edcebcf656dd5bc761f5/native_assets.json: 

@@ -1,196 +1,117 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_frontend/state/book_state.dart';
+import 'package:flutter_frontend/state/annotation_state.dart';
+import 'package:flutter_frontend/widgets/chapter_drawer.dart';
+import 'package:flutter_frontend/widgets/reading_pane.dart';
+import 'package:flutter_frontend/widgets/notes_sidebar.dart';
+import 'package:flutter_frontend/widgets/bottom_actions_nav.dart';
 
-/// Temporary ReaderScreen stub to allow routing and preview.
-/// Replace with full reading pane, navigation drawer, and notes sidebar later.
-class ReaderScreen extends StatelessWidget {
+/// ReaderScreen is the main reading experience screen.
+/// Layout:
+/// - Left: ChapterDrawer (as a drawer on small screens, persistent on large screens as Scaffold.drawer)
+/// - Center: ReadingPane displaying current chapter and sections
+/// - Right: NotesSidebar (persistent on wide screens, endDrawer on small)
+/// - Bottom: BottomActionsNav with quick actions
+class ReaderScreen extends StatefulWidget {
   const ReaderScreen({super.key});
 
   @override
+  State<ReaderScreen> createState() => _ReaderScreenState();
+}
+
+class _ReaderScreenState extends State<ReaderScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  void initState() {
+    super.initState();
+    // Load annotations for current chapter when book state changes selection.
+    // We listen in build to avoid async with context after await; use provider watchers.
+  }
+
+  void _openEndDrawer() {
+    // Open end drawer if present
+    _scaffoldKey.currentState?.openEndDrawer();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final book = context.watch<BookState>();
+    final annotations = context.watch<AnnotationState>();
     final cs = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Vibe Coding Companion'),
-        actions: const [
-          _HeaderActionBar(),
-        ],
-      ),
-      drawer: const _ReaderDrawer(),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= 900;
-            return Row(
+    // Ensure annotations for current chapter are loaded.
+    final chapterId = book.currentChapterId;
+    if (chapterId != null && !annotations.isLoading) {
+      // Fire-and-forget to load annotations when chapter changes.
+      // No context usage after await inside AnnotationState.
+      annotations.loadByChapter(chapterId);
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 1024; // wide threshold
+        final showRightPersistent = isWide && book.showNotesSidebar;
+
+        return Scaffold(
+          key: _scaffoldKey,
+          appBar: AppBar(
+            title: const Text('Vibe Coding Companion'),
+            actions: [
+              IconButton(
+                tooltip: 'Search',
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Search coming soon')),
+                  );
+                },
+                icon: const Icon(Icons.search),
+                color: cs.primary,
+              ),
+              const SizedBox(width: 4),
+            ],
+          ),
+          // Left drawer is always available on narrow screens
+          drawer: const ChapterDrawer(),
+          // Right endDrawer is only used on narrow screens for notes
+          endDrawer: isWide ? null : SafeArea(child: const NotesSidebar()),
+          body: SafeArea(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Optional left spacer when wide to mimic a table-of-contents area in future.
-                if (isWide) const SizedBox(width: 8),
-                // Reading card
+                // Optional permanent chapter drawer space for extra wide layouts (>=1280)
+                if (constraints.maxWidth >= 1280)
+                  SizedBox(
+                    width: 300,
+                    child: const ChapterDrawer(),
+                  ),
+                // Center Reading Pane
                 Expanded(
                   flex: 3,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Card(
-                      elevation: 1,
-                      surfaceTintColor: Colors.transparent,
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Welcome to Vibe Coding',
-                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: cs.primary,
-                                    )),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Your interactive companion for learning vibe coding concepts. '
-                              'This is a placeholder reading view. The full app will include chapters, '
-                              'annotations, and interactive examples.',
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            const SizedBox(height: 16),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: const [
-                                Chip(label: Text('Beginner')),
-                                Chip(label: Text('Interactive')),
-                                Chip(label: Text('Annotations')),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            ElevatedButton.icon(
-                              onPressed: () {},
-                              icon: const Icon(Icons.play_circle_fill),
-                              label: const Text('Start Reading'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                  child: const ReadingPane(),
                 ),
-                // Notes/annotations placeholder panel when wide
-                if (isWide)
+                // Right persistent notes sidebar for wide screens (when enabled)
+                if (showRightPersistent)
                   Expanded(
                     flex: 2,
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 16, top: 16, bottom: 16, left: 8),
-                      decoration: BoxDecoration(
-                        color: cs.surface,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(16),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                        border: Border.all(color: Theme.of(context).dividerColor),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Notes',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    )),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Capture insights and highlights as you read. '
-                              'This is a placeholder notes sidebar for preview.',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                            const Spacer(),
-                            OutlinedButton.icon(
-                              onPressed: () {},
-                              icon: const Icon(Icons.note_add_outlined),
-                              label: const Text('Add Note'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    child: const NotesSidebar(),
                   ),
               ],
-            );
-          },
-        ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: 0,
-        onDestinationSelected: (_) {},
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.menu_book_outlined), label: 'Read'),
-          NavigationDestination(icon: Icon(Icons.sticky_note_2_outlined), label: 'Notes'),
-          NavigationDestination(icon: Icon(Icons.search), label: 'Search'),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeaderActionBar extends StatelessWidget {
-  const _HeaderActionBar();
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        IconButton(
-          tooltip: 'Search',
-          onPressed: () {},
-          icon: const Icon(Icons.search),
-          color: cs.primary,
-        ),
-        const SizedBox(width: 4),
-      ],
-    );
-  }
-}
-
-class _ReaderDrawer extends StatelessWidget {
-  const _ReaderDrawer();
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Drawer(
-      child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          children: [
-            ListTile(
-              title: Text(
-                'Chapters',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: cs.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
             ),
-            const Divider(),
-            const ListTile(
-              leading: Icon(Icons.looks_one_outlined),
-              title: Text('Introduction to Vibe Coding'),
-            ),
-            const ListTile(
-              leading: Icon(Icons.looks_two_outlined),
-              title: Text('Core Concepts'),
-            ),
-            const ListTile(
-              leading: Icon(Icons.looks_3_outlined),
-              title: Text('Advanced Patterns'),
-            ),
-          ],
-        ),
-      ),
+          ),
+          bottomNavigationBar: BottomActionsNav(
+            onToggleNotes: () async {
+              if (isWide) {
+                await book.setShowNotesSidebar(!book.showNotesSidebar);
+              } else {
+                // On small screens open/close the endDrawer
+                _openEndDrawer();
+              }
+            },
+          ),
+        );
+      },
     );
   }
 }

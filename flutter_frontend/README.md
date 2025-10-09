@@ -99,4 +99,26 @@ Defined in lib/theme/ocean_theme.dart and applied app-wide.
 - Async safety: The app avoids using BuildContext across async gaps by updating state first and persisting later.
 - No new dependencies are introduced beyond pubspec.yaml.
 
+## Building APK and exporting to repository root
+
+To produce an Android APK and copy it to the repository root as `vibe_coding_companion.apk`:
+
+1) Build the APK:
+   - Release: `flutter build apk --release`
+   - Debug: `flutter build apk --debug`
+
+2) Copy the latest APK to the repository root:
+   - `dart run tool/copy_apk.dart`
+
+The script:
+- Prefers a release APK if present, otherwise falls back to debug.
+- Searches standard Gradle output folders like:
+  - `build/app/outputs/apk/release/` and `build/app/outputs/apk/debug/`
+  - ABI split variants (e.g., `app-armeabi-v7a-release.apk`, `app-armeabi-v7a-debug.apk`)
+
+Convenience Makefile targets are also available:
+- `make build-release-apk`
+- `make build-debug-apk`
+- `make copy-apk`
+
 Happy reading and note-taking!

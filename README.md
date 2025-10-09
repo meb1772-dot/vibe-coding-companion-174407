@@ -101,3 +101,25 @@ Note: Ensure you have Flutter installed and set up for your target platforms.
 - Minor analyzer warnings are addressed in code with comments and safe async patterns to avoid using context across async gaps.
 
 For more details, see flutter_frontend/README.md inside the app directory.
+
+## Exporting APK to repository root
+
+After building the Android APK in the Flutter app, you can copy the latest generated APK to the repository root as `vibe_coding_companion.apk`.
+
+Quick steps (run from repository root):
+- cd flutter_frontend
+- Build an APK:
+  - Release: `flutter build apk --release`
+  - Debug: `flutter build apk --debug`
+- Copy the latest APK to repo root: `dart run tool/copy_apk.dart`
+
+Alternatively, use the provided Makefile targets from within `flutter_frontend`:
+- `make build-release-apk`
+- `make build-debug-apk`
+- `make copy-apk`
+
+Notes:
+- The copy script prefers a release APK if present, otherwise falls back to debug.
+- It searches standard Gradle output folders such as:
+  - `build/app/outputs/apk/release/` and `build/app/outputs/apk/debug/`
+  - Split-ABI variants (e.g., `app-armeabi-v7a-release.apk`)

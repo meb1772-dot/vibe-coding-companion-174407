@@ -1,1 +1,35 @@
+# Existing local env file
 .env
+
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+**/doc/api/
+
+# IDE/editor
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.DS_Store
+*.swp
+*.log
+
+# Generated files
+lib/generated_plugin_registrant.dart
+app.*.symbols
+app.*.map.json
+
+# Android Studio build dirs
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Android signing files (DO NOT COMMIT SECRETS)
+android/key.properties
+android/app/*.jks
+android/app/*.keystore

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_frontend/theme/ocean_theme.dart';
 import 'package:flutter_frontend/screens/reader_screen.dart';
+import 'package:flutter_frontend/state/book_state.dart';
+import 'package:flutter_frontend/state/annotation_state.dart';
 
 void main() {
-  // Entry point: wire providers (placeholders for now) and run app.
+  // Entry point: wire providers and run app.
   runApp(const AppRoot());
 }
 
@@ -13,17 +15,25 @@ class AppRoot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Placeholder MultiProvider wiring to be filled later with real state.
+    // Provide BookState and AnnotationState to the app, and initialize content on start.
     return MultiProvider(
-      providers: const [
-        // Add providers here later, e.g. ChangeNotifierProvider(create: (_) => ReaderState()),
+      providers: [
+        ChangeNotifierProvider<BookState>(
+          create: (_) {
+            final bs = BookState();
+            // Initialize asynchronously; do not use context after await per async rules.
+            // We trigger without awaiting here to avoid build context issues.
+            bs.initialize();
+            return bs;
+          },
+        ),
+        ChangeNotifierProvider<AnnotationState>(
+          create: (_) => AnnotationState(),
+        ),
       ],
       child: MaterialApp(
         title: 'Vibe Coding Companion',
         theme: OceanTheme.theme,
-        // Use InheritedMediaQuery for responsive behavior across platforms if needed.
-        // In MaterialApp v3, this is not a direct parameter; wrap the app in MediaQuery if needed elsewhere.
-        // Set initial route and onGenerateRoute for navigation.
         initialRoute: '/reader',
         onGenerateRoute: (settings) {
           switch (settings.name) {

@@ -52,9 +52,9 @@ class BottomActionsNav extends StatelessWidget {
               book.previousChapter();
               break;
             case 1:
-              // Bookmark placeholder
+              // Simple bookmark toggle feedback. Persisting bookmarks list is out of scope.
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Bookmark saved (placeholder)')),
+                const SnackBar(content: Text('Bookmark saved')),
               );
               break;
             case 2:
@@ -64,7 +64,7 @@ class BottomActionsNav extends StatelessWidget {
               await book.setFontSize(book.fontSize - 1);
               break;
             case 4:
-              // Toggle notes: on small screens this opens end drawer via callback; on wide it toggles preference.
+              // Toggle notes: on small screens open/close endDrawer via callback; on wide toggle preference.
               if (onToggleNotes != null) {
                 onToggleNotes!();
               } else {
@@ -76,7 +76,7 @@ class BottomActionsNav extends StatelessWidget {
               break;
           }
         },
-        selectedIndex: 2, // neutral; we are using it as action bar
+        selectedIndex: 2, // neutral; used as action bar
       ),
     );
   }

@@ -52,10 +52,15 @@ class ChapterDrawer extends StatelessWidget {
                           ),
                     ),
                     onTap: () {
-                      // Update current chapter. Avoid using Navigator after async; this is sync.
+                      // Update current chapter immediately.
                       context.read<BookState>().setCurrentChapter(ch.id);
-                      // Close the drawer if it is presented as drawer (not persistent)
-                      Navigator.of(context).maybePop();
+                      // Close if it's a modal drawer; Scaffold.maybeOf handles absence gracefully.
+                      final scaffold = Scaffold.maybeOf(context);
+                      if (scaffold?.isDrawerOpen == true) {
+                        Navigator.of(context).pop();
+                      } else {
+                        Navigator.of(context).maybePop();
+                      }
                     },
                   );
                 },

@@ -2,7 +2,12 @@ import 'dart:io';
 
 /// PUBLIC_INTERFACE
 /// Copies the most suitable built APK from the standard Flutter/Android output
-/// folders to the repository root as `vibe_coding_companion.apk`.
+/// folders to the repository root and appends version info to the filename.
+///
+/// Output filename pattern:
+///   vibe_coding_companion-vVERSIONNAME-cVERSIONCODE.apk
+/// Example:
+///   vibe_coding_companion-v1.2.3-c45.apk
 ///
 /// Preference order:
 /// 1) Universal release APK (e.g., app-release.apk)
@@ -11,19 +16,54 @@ import 'dart:io';
 /// 4) Any ABI split debug APK (e.g., app-armeabi-v7a-debug.apk)
 ///
 /// Usage:
-/// 1) Build an APK (e.g., `flutter build apk --release`)
-/// 2) Run `dart run tool/copy_apk.dart`
+/// 1) Build an APK (e.g., flutter build apk --release)
+/// 2) Run: dart run tool/copy_apk.dart
 ///
-/// The script searches under `build/app/outputs/apk/` and copies the selected
-/// file to the repository root as `vibe_coding_companion.apk`.
+/// The script searches under build/app/outputs/apk/ and copies the selected
+/// file to the repository root as a versioned filename.
 Future<void> main(List<String> args) async {
   // Determine project boundaries:
-  // This script resides in <project>/flutter_frontend/tool/copy_apk.dart
-  // We want to output to repo root: <project>/vibe_coding_companion.apk
+  // This script resides in <repo>/flutter_frontend/tool/copy_apk.dart
   final scriptFile = Platform.script.toFilePath();
   final scriptDir = File(scriptFile).parent; // .../flutter_frontend/tool
   final flutterFrontendDir = scriptDir.parent; // .../flutter_frontend
   final repoRootDir = flutterFrontendDir.parent; // .../
+
+  // Read version from pubspec.yaml (format: version: x.y.z+code)
+  final pubspecFile = File('${flutterFrontendDir.path}/pubspec.yaml');
+  if (!pubspecFile.existsSync()) {
+    stderr.writeln('pubspec.yaml not found at ${pubspecFile.path}');
+    exit(1);
+  }
+
+  final pubspecLines = pubspecFile.readAsLinesSync();
+  String? versionName;
+  String? versionCode;
+
+  // Find the first "version:" line and extract name/code.
+  for (final rawLine in pubspecLines) {
+    final line = rawLine.trim();
+    if (line.startsWith('version:')) {
+      final value = line.substring('version:'.length).trim(); // e.g., 1.2.3+45
+      final plusIdx = value.indexOf('+');
+      if (plusIdx > 0) {
+        versionName = value.substring(0, plusIdx);
+        versionCode = value.substring(plusIdx + 1);
+      } else {
+        // No build code provided, default to 0.
+        versionName = value;
+        versionCode = '0';
+      }
+      break;
+    }
+  }
+
+  if (versionName == null || versionCode == null) {
+    stderr.writeln(
+      'Could not parse version from pubspec.yaml. Expected "version: x.y.z+code".',
+    );
+    exit(1);
+  }
 
   final outputsBase = Directory(
     '${flutterFrontendDir.path}/build/app/outputs/apk',
@@ -31,7 +71,7 @@ Future<void> main(List<String> args) async {
 
   if (!outputsBase.existsSync()) {
     stderr.writeln('APK outputs folder not found: ${outputsBase.path}');
-    stderr.writeln('Make sure you ran a build, e.g.:');
+    stderr.writeln('Make sure you ran a build, for example:');
     stderr.writeln('  flutter build apk --release');
     exit(2);
   }
@@ -68,18 +108,18 @@ Future<void> main(List<String> args) async {
 
   // Some projects may output under nested flavor folders: apk/<flavor>/release
   if (candidates.isEmpty) {
-    if (outputsBase.existsSync()) {
-      for (final flavorDir in outputsBase.listSync()) {
-        if (flavorDir is Directory && flavorDir.path != '${outputsBase.path}/release' && flavorDir.path != '${outputsBase.path}/debug') {
-          addApksMatching(
-            Directory('${flavorDir.path}/release'),
-            (name) => name == 'app-release.apk',
-          );
-          addApksMatching(
-            Directory('${flavorDir.path}/release'),
-            (name) => name.endsWith('-release.apk') && name != 'app-release.apk',
-          );
-        }
+    for (final flavorDir in outputsBase.listSync()) {
+      if (flavorDir is Directory &&
+          flavorDir.path != '${outputsBase.path}/release' &&
+          flavorDir.path != '${outputsBase.path}/debug') {
+        addApksMatching(
+          Directory('${flavorDir.path}/release'),
+          (name) => name == 'app-release.apk',
+        );
+        addApksMatching(
+          Directory('${flavorDir.path}/release'),
+          (name) => name.endsWith('-release.apk') && name != 'app-release.apk',
+        );
       }
     }
   }
@@ -102,18 +142,18 @@ Future<void> main(List<String> args) async {
 
   // Also check nested flavor debug directories if still empty
   if (candidates.isEmpty) {
-    if (outputsBase.existsSync()) {
-      for (final flavorDir in outputsBase.listSync()) {
-        if (flavorDir is Directory && flavorDir.path != '${outputsBase.path}/release' && flavorDir.path != '${outputsBase.path}/debug') {
-          addApksMatching(
-            Directory('${flavorDir.path}/debug'),
-            (name) => name == 'app-debug.apk',
-          );
-          addApksMatching(
-            Directory('${flavorDir.path}/debug'),
-            (name) => name.endsWith('-debug.apk') && name != 'app-debug.apk',
-          );
-        }
+    for (final flavorDir in outputsBase.listSync()) {
+      if (flavorDir is Directory &&
+          flavorDir.path != '${outputsBase.path}/release' &&
+          flavorDir.path != '${outputsBase.path}/debug') {
+        addApksMatching(
+          Directory('${flavorDir.path}/debug'),
+          (name) => name == 'app-debug.apk',
+        );
+        addApksMatching(
+          Directory('${flavorDir.path}/debug'),
+          (name) => name.endsWith('-debug.apk') && name != 'app-debug.apk',
+        );
       }
     }
   }
@@ -121,7 +161,7 @@ Future<void> main(List<String> args) async {
   if (candidates.isEmpty) {
     stderr.writeln('No APK found under ${outputsBase.path}');
     stderr.writeln('Searched common locations for release and debug outputs.');
-    stderr.writeln('Build the APK first, e.g.:');
+    stderr.writeln('Build the APK first, for example:');
     stderr.writeln('  flutter build apk --release');
     exit(3);
   }
@@ -134,9 +174,11 @@ Future<void> main(List<String> args) async {
   });
 
   final selected = candidates.first;
-  final dest = File('${repoRootDir.path}/vibe_coding_companion.apk');
 
-  // Ensure any existing file is removed before copy
+  final outName = 'vibe_coding_companion-v$versionName-c$versionCode.apk';
+  final dest = File('${repoRootDir.path}/$outName');
+
+  // Ensure any existing file with the same name is removed before copy
   if (dest.existsSync()) {
     try {
       dest.deleteSync();

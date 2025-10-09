@@ -101,7 +101,7 @@ Defined in lib/theme/ocean_theme.dart and applied app-wide.
 
 ## Building APK and exporting to repository root
 
-To produce an Android APK and copy it to the repository root as `vibe_coding_companion.apk`:
+To produce an Android APK and copy it to the repository root with versioned filename:
 
 1) Build the APK:
    - Release: `flutter build apk --release`
@@ -115,6 +115,11 @@ The script:
 - Searches standard Gradle output folders like:
   - `build/app/outputs/apk/release/` and `build/app/outputs/apk/debug/`
   - ABI split variants (e.g., `app-armeabi-v7a-release.apk`, `app-armeabi-v7a-debug.apk`)
+- Reads app version from `pubspec.yaml` (e.g., `version: 1.2.3+45`) and names the copied file:
+  - `vibe_coding_companion-v1.2.3-c45.apk`
+
+Notes:
+- The script prints the final output path on success.
 
 Convenience Makefile targets are also available:
 - `make build-release-apk`

@@ -104,7 +104,9 @@ For more details, see flutter_frontend/README.md inside the app directory.
 
 ## Exporting APK to repository root
 
-After building the Android APK in the Flutter app, you can copy the latest generated APK to the repository root as `vibe_coding_companion.apk`.
+After building the Android APK in the Flutter app, you can copy the latest generated APK to the repository root with a versioned filename derived from pubspec.yaml:
+
+- Output pattern: `vibe_coding_companion-v<version>-c<code>.apk` (e.g., `vibe_coding_companion-v1.2.3-c45.apk`)
 
 Quick steps (run from repository root):
 - cd flutter_frontend
@@ -123,3 +125,4 @@ Notes:
 - It searches standard Gradle output folders such as:
   - `build/app/outputs/apk/release/` and `build/app/outputs/apk/debug/`
   - Split-ABI variants (e.g., `app-armeabi-v7a-release.apk`)
+- On success, the script prints the final absolute output path.

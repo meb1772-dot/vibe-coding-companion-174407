@@ -3,16 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_frontend/main.dart';
 
 void main() {
-  testWidgets('App generation message displayed', (WidgetTester tester) async {
-    await tester.pumpWidget(const MyApp());
+  testWidgets('App renders AppRoot and reader route', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const AppRoot());
 
-    expect(find.text('flutter_frontend App is being generated...'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-  });
-
-  testWidgets('App bar has correct title', (WidgetTester tester) async {
-    await tester.pumpWidget(const MyApp());
-
-    expect(find.text('flutter_frontend'), findsOneWidget);
+    // The ReaderScreen app bar title should exist.
+    expect(find.text('Vibe Coding Companion'), findsOneWidget);
+    // Bottom navigation exists.
+    expect(find.byType(NavigationBar), findsOneWidget);
   });
 }

@@ -1,0 +1,21 @@
+{
+  "id": "ch1",
+  "title": "Introduction to Vibe Coding",
+  "sections": [
+    {
+      "id": "s1",
+      "heading": "Welcome",
+      "body": "Vibe coding is a mindset for crafting delightful software. In this introduction, you'll learn what it is and why it matters."
+    },
+    {
+      "id": "s2",
+      "heading": "What You'll Learn",
+      "body": "We'll cover the foundations, build intuition through examples, and prepare you for interactive exercises."
+    },
+    {
+      "id": "s3",
+      "heading": "Setting Expectations",
+      "body": "This app provides a smooth reading experience with local-first annotations, making it easy to capture insights as you go."
+    }
+  ]
+}

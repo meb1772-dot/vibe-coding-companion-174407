@@ -1,0 +1,19 @@
+{
+  "chapters": [
+    {
+      "id": "ch1",
+      "title": "Introduction to Vibe Coding",
+      "file": "assets/content/chapters/ch1.json"
+    },
+    {
+      "id": "ch2",
+      "title": "Core Concepts",
+      "file": "assets/content/chapters/ch2.json"
+    },
+    {
+      "id": "ch3",
+      "title": "Advanced Patterns",
+      "file": "assets/content/chapters/ch3.json"
+    }
+  ]
+}

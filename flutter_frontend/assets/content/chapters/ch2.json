@@ -1,0 +1,21 @@
+{
+  "id": "ch2",
+  "title": "Core Concepts",
+  "sections": [
+    {
+      "id": "s1",
+      "heading": "Signals and Feedback",
+      "body": "Core to vibe coding is reading the signals your system emits and shaping feedback loops to guide development."
+    },
+    {
+      "id": "s2",
+      "heading": "Progressive Disclosure",
+      "body": "Reveal complexity as needed. Start with simple primitives, then layer on capabilities in context."
+    },
+    {
+      "id": "s3",
+      "heading": "Guided Flow",
+      "body": "Design flows that naturally lead users forward, reducing friction and cognitive load."
+    }
+  ]
+}

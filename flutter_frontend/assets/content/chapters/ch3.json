@@ -1,0 +1,21 @@
+{
+  "id": "ch3",
+  "title": "Advanced Patterns",
+  "sections": [
+    {
+      "id": "s1",
+      "heading": "Pattern: Intent-First APIs",
+      "body": "Start from user intent and design APIs that make the common path obvious and ergonomic."
+    },
+    {
+      "id": "s2",
+      "heading": "Pattern: Local-First Notes",
+      "body": "Keep user notes and highlights responsive and resilient by defaulting to local-first persistence."
+    },
+    {
+      "id": "s3",
+      "heading": "Pattern: Progressive Rendering",
+      "body": "Render meaningful content early and refine progressively to keep interactions fluid on all devices."
+    }
+  ]
+}

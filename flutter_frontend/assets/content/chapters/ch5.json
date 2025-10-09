@@ -1,0 +1,14 @@
+{
+  "id": "ch5",
+  "title": "Designing Feedback Loops",
+  "sections": [
+    { "id": "s1", "heading": "Loops in Product", "body": "Every interaction forms a loop: user acts, system reacts, user interprets. Tight loops build confidence; laggy loops drain attention. We list loops for each feature and decide the expected response time, the form of feedback, and the escalation path when something goes wrong." },
+    { "id": "s2", "heading": "Fast Acknowledgement", "body": "The first 100ms is about acknowledgement. Even if the result needs time, show that the system heard the request. We use button state changes, touch ripples, progress bars seeded with a small initial buffer, and 'saving…' text that flips to 'saved' without stealing focus." },
+    { "id": "s3", "heading": "Optimistic UI", "body": "Optimistic UI lets users continue while work completes in the background. We ensure correctness by designing reconciliation logic: if the server disagrees, we correct gently, explain why, and provide a path to reconcile. The net effect is a faster-feeling product with transparent safeguards." },
+    { "id": "s4", "heading": "Prefetch and Prediction", "body": "Good loops start before the click. We prefetch likely data and precompute expensive layouts. For example, when a user hovers or scrolls near a detail card, we begin fetching in the background. Combined with local caching, the next tap feels instantaneous." },
+    { "id": "s5", "heading": "Long-Running Work", "body": "For tasks that take seconds, we chunk progress and show intermediate value: e.g., thumbnails populating row by row. We avoid modal progress that blocks exploration. We also provide cancel and defer so the user keeps agency." },
+    { "id": "s6", "heading": "Error Loops", "body": "Errors are just loops with a different ending. We detect recoverable states and handle them without drama. On failure we use precise, blame-free language: 'Couldn’t reach the server. Your change is saved locally and will retry in the background.' Retry should be automatic, with manual retry available, and a visible indicator of status." },
+    { "id": "s7", "heading": "Tools for Loop Design", "body": "We sketch loops as sequence diagrams alongside screens. We mark durations for each step and annotate the signals that appear. We attach analytics events to loop boundaries so we can measure timing and tweak thresholds without shipping a full update." },
+    { "id": "s8", "heading": "Exercises", "body": "Choose a loop in your app and write its timing budget. Implement an acknowledgement within 100ms and optimistic UI if safe. Add a visible repair path and measure completion times over a week." }
+  ]
+}

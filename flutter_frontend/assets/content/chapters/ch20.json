@@ -1,0 +1,11 @@
+{
+  "id": "ch20",
+  "title": "Design Debt and Refactoring",
+  "sections": [
+    { "id": "s1", "heading": "Identifying Design Debt", "body": "Design debt shows up as inconsistent states, conflicting copies, and duplicated patterns. Symptoms include frequent user hesitations and growing support tickets. We track debt like we track bugs and schedule time to pay it down." },
+    { "id": "s2", "heading": "Refactor by Story", "body": "We refactor along narrative seams. Start by rewriting copy for a scene, then align controls and states. Only after the story is coherent do we touch underlying components. This order keeps work grounded and reduces churn." },
+    { "id": "s3", "heading": "Pattern Consolidation", "body": "We choose one button style for primary actions, one for secondary, and remove the rest. We standardize spacing, motion, and chips. Consolidation accelerates design and development and improves vibe consistency." },
+    { "id": "s4", "heading": "Measuring Payoff", "body": "We measure reduced time-to-complete, fewer hovers before click, and lower error rates. The payoff is a calmer interface that lets users finish more with less thinking." },
+    { "id": "s5", "heading": "Exercises", "body": "Audit a feature and remove two redundant patterns. Merge two similar dialogs. Reduce a three-step flow to two by improving defaults." }
+  ]
+}

@@ -1,19 +1,26 @@
 {
   "chapters": [
-    {
-      "id": "ch1",
-      "title": "Introduction to Vibe Coding",
-      "file": "assets/content/chapters/ch1.json"
-    },
-    {
-      "id": "ch2",
-      "title": "Core Concepts",
-      "file": "assets/content/chapters/ch2.json"
-    },
-    {
-      "id": "ch3",
-      "title": "Advanced Patterns",
-      "file": "assets/content/chapters/ch3.json"
-    }
+    { "id": "ch1", "title": "Introduction to Vibe Coding", "file": "assets/content/chapters/ch1.json" },
+    { "id": "ch2", "title": "Core Concepts", "file": "assets/content/chapters/ch2.json" },
+    { "id": "ch3", "title": "Advanced Patterns", "file": "assets/content/chapters/ch3.json" },
+    { "id": "ch4", "title": "Vibe-Driven Requirements", "file": "assets/content/chapters/ch4.json" },
+    { "id": "ch5", "title": "Designing Feedback Loops", "file": "assets/content/chapters/ch5.json" },
+    { "id": "ch6", "title": "Narrative-First Interfaces", "file": "assets/content/chapters/ch6.json" },
+    { "id": "ch7", "title": "Micro-interactions that Matter", "file": "assets/content/chapters/ch7.json" },
+    { "id": "ch8", "title": "Local-First Mindset", "file": "assets/content/chapters/ch8.json" },
+    { "id": "ch9", "title": "Latency, Flow, and Focus", "file": "assets/content/chapters/ch9.json" },
+    { "id": "ch10", "title": "Accessible Vibes", "file": "assets/content/chapters/ch10.json" },
+    { "id": "ch11", "title": "Vibe Coding with Teams", "file": "assets/content/chapters/ch11.json" },
+    { "id": "ch12", "title": "Patterns for Resilient UI", "file": "assets/content/chapters/ch12.json" },
+    { "id": "ch13", "title": "Ethics and Empathy in UX", "file": "assets/content/chapters/ch13.json" },
+    { "id": "ch14", "title": "Story-Driven Architecture", "file": "assets/content/chapters/ch14.json" },
+    { "id": "ch15", "title": "Signals: Observability by Design", "file": "assets/content/chapters/ch15.json" },
+    { "id": "ch16", "title": "Vibe Testing: From Feels to Facts", "file": "assets/content/chapters/ch16.json" },
+    { "id": "ch17", "title": "Guided Onboarding Journeys", "file": "assets/content/chapters/ch17.json" },
+    { "id": "ch18", "title": "Intent-First APIs Walkthrough", "file": "assets/content/chapters/ch18.json" },
+    { "id": "ch19", "title": "Patterns for Flow Preservation", "file": "assets/content/chapters/ch19.json" },
+    { "id": "ch20", "title": "Design Debt and Refactoring", "file": "assets/content/chapters/ch20.json" },
+    { "id": "ch21", "title": "Vibe Coding Case Study: Notes App", "file": "assets/content/chapters/ch21.json" },
+    { "id": "ch22", "title": "Capstone: From Idea to Vibes", "file": "assets/content/chapters/ch22.json" }
   ]
 }

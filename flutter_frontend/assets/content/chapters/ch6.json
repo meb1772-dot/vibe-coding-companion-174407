@@ -1,0 +1,13 @@
+{
+  "id": "ch6",
+  "title": "Narrative-First Interfaces",
+  "sections": [
+    { "id": "s1", "heading": "Scenes, Not Screens", "body": "Instead of designing a static screen, we design a scene with characters, goals, and props. The main character is the user’s intent; props are controls and data. Scenes emphasize continuity: you keep your place, your tools stay where you left them, and new props enter from predictable edges." },
+    { "id": "s2", "heading": "Tone of Voice", "body": "Copy is a core part of the narrative. We aim for clarity over cleverness. We choose verbs that describe outcomes and nouns that match the user’s mental model. Error copy is empathetic and active. We audit strings to avoid contradictions and maintain a consistent voice." },
+    { "id": "s3", "heading": "Character Arcs", "body": "An onboarding story can be plotted like a character arc: curiosity, exploration, mastery. We build scaffolding—tooltips, empty states, and small wins—that supports the arc. As mastery grows, we remove scaffolding to reduce noise and increase speed." },
+    { "id": "s4", "heading": "Spatial Continuity", "body": "We use spatial relationships to help users build a map of the product. Panels slide from consistent edges, drawers anchor to predictable sides, and modal overlays are reserved for rare, focused decisions. Maintaining spatial continuity reduces disorientation." },
+    { "id": "s5", "heading": "Temporal Continuity", "body": "Timing is part of the story. We choreograph animations so elements don’t collide. Delays are purposeful and short. We prefer symmetric motion—opening and closing use related durations—because it trains expectations and builds rhythm." },
+    { "id": "s6", "heading": "Narrative Debt", "body": "When features accrete without narrative, the product accumulates narrative debt. Users get lost. We pay down this debt by consolidating patterns, rewriting copy, and removing divergent flows that no longer make sense. A small deletion can restore a lot of coherence." },
+    { "id": "s7", "heading": "Exercises", "body": "Describe your product as a three-scene story. For each scene, list the props that must be visible, the primary verb, and the most important signal. Remove one prop per scene and see if the story remains intact." }
+  ]
+}

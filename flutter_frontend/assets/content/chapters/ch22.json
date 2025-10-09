@@ -1,0 +1,12 @@
+{
+  "id": "ch22",
+  "title": "Capstone: From Idea to Vibes",
+  "sections": [
+    { "id": "s1", "heading": "Choose a Problem", "body": "Pick a real problem—ideally one you care about. Write a one-sentence promise: what is the tiniest transformation the product achieves? This promise becomes the north star for all design and engineering decisions." },
+    { "id": "s2", "heading": "Write the Story", "body": "Create a 30-second first-run narrative. Write it as if narrating a video. Mark beats and call out signals the user will see or hear. Keep it lightweight so it stays alive through iterations." },
+    { "id": "s3", "heading": "Design the Loops", "body": "List loops for create, edit, delete, and share. Assign timing budgets and repair paths. Establish which loops can be optimistic and which require confirmation due to risk." },
+    { "id": "s4", "heading": "Build the Scene", "body": "Wireframe a scene with clear props and a dominant verb. Use progressive disclosure for complexity. Decide where motion helps orientation and where it distracts." },
+    { "id": "s5", "heading": "Instrument and Iterate", "body": "Add observability for beats and loops. Run a small test with real users. Adjust copy, timing, and defaults. Keep the story updated. Ship a coherent vibe at each milestone." },
+    { "id": "s6", "heading": "Share the Craft", "body": "Teach your team the vocabulary. Add a vibe section to specs and PRs. Celebrate small wins. Vibe coding is a craft; it improves with practice and generosity." }
+  ]
+}

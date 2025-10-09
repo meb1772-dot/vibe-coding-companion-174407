@@ -1,0 +1,11 @@
+{
+  "id": "ch13",
+  "title": "Ethics and Empathy in UX",
+  "sections": [
+    { "id": "s1", "heading": "Trust as a Feature", "body": "Trust is a first-class feature. We design to respect time, attention, and privacy. Dark patterns are anti-vibes; we avoid them categorically. Our metrics include user well-being and long-term retention." },
+    { "id": "s2", "heading": "Consent and Clarity", "body": "We ask permission clearly, explain why, and offer a meaningful choice. Defaults are conservative. We avoid manipulative copy and give users simple ways to change their mind." },
+    { "id": "s3", "heading": "Data Dignity", "body": "We collect minimal data and explain benefits. We provide export and delete options. We write policies in human-readable language. Data dignity strengthens brand and reduces support burden." },
+    { "id": "s4", "heading": "Inclusive Research", "body": "We test with diverse participants and assistive technologies. We compensate fairly and treat all feedback with respect. Empathy is not a workshop; it is a daily practice." },
+    { "id": "s5", "heading": "Exercises", "body": "Rewrite a permissions dialog in plain language. Add a cancel path to a high-pressure flow. Review analytics collection and remove events that do not serve the user." }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "ch7",
+  "title": "Micro-interactions that Matter",
+  "sections": [
+    { "id": "s1", "heading": "The Power of Small", "body": "Micro-interactions are the tiny pieces of UI that bind everything together: button press feedback, inline validation, hover states, and edge scroll acceleration. Each is an opportunity to teach, reassure, or delight." },
+    { "id": "s2", "heading": "Pressed, Hovered, Focused", "body": "We design distinct states with purpose. On press, the element slightly compresses or gains a strong outline. On hover, we increase contrast and surface a hint. On focus, we provide a high-contrast ring for accessibility and keyboard navigation." },
+    { "id": "s3", "heading": "Inline Validation", "body": "Validation should guide, not scold. We validate as the user types when possible, clarify requirements with examples, and keep the cursor where the user is working. Error text is short and specific: 'Use at least 8 characters' beats a generic warning." },
+    { "id": "s4", "heading": "Momentum Cues", "body": "When a step is complete, we give a gentle cue: a confetti micro-burst, a checkmark that draws itself, or a sound that is subtle and optional. We calibrate frequency to avoid noise and ensure all cues can be turned off." },
+    { "id": "s5", "heading": "Edge Cases", "body": "Micro-interactions must behave gracefully under stress: rapid taps, network pauses, and partial input. We test with tools that simulate touch jitter and slow connections. The goal is resilience: the UI never gets stuck in an in-between state." },
+    { "id": "s6", "heading": "Exercises", "body": "Pick two micro-interactions and write their state diagrams. Implement them with 120–200ms transitions and verify they remain accessible with keyboard and screen readers." }
+  ]
+}

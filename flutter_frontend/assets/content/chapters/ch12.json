@@ -1,0 +1,11 @@
+{
+  "id": "ch12",
+  "title": "Patterns for Resilient UI",
+  "sections": [
+    { "id": "s1", "heading": "Degredation, Gracefully", "body": "When resources are scarce, we degrade gracefully. Images load with blurred placeholders. Complex graphs fall back to summaries. Controls remain responsive with clear 'Try again' actions. Users feel the app is still on their side." },
+    { "id": "s2", "heading": "Idempotent Actions", "body": "Buttons can be tapped twice without harm. Requests include deduplication keys. The UI shows progress but remains interactive. This small engineering choice dramatically reduces user anxiety." },
+    { "id": "s3", "heading": "State Repair", "body": "We detect partial work and offer repair: 'We found a draft from 2 minutes ago. Restore?' Soft locks prevent conflicting edits without blocking. Repair builds trust even when mistakes occur." },
+    { "id": "s4", "heading": "Predictable Navigation", "body": "The back button always works. Deep links bring users to the right scene with necessary context. Navigation transitions are consistent and reversible, preserving mental maps." },
+    { "id": "s5", "heading": "Exercises", "body": "Make an action idempotent. Add draft recovery to a text input. Test deep links and ensure the scene reconstructs properly when launched cold." }
+  ]
+}

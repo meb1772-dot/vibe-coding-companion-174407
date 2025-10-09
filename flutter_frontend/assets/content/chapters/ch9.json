@@ -1,0 +1,11 @@
+{
+  "id": "ch9",
+  "title": "Latency, Flow, and Focus",
+  "sections": [
+    { "id": "s1", "heading": "Latency Budgets", "body": "We define budgets for feedback, content display, and task completion. We aim for sub-100ms for acknowledgement, under 1s for above-the-fold content, and clear progressive states beyond that. Budgets guide engineering trade-offs." },
+    { "id": "s2", "heading": "Maintaining Flow", "body": "Flow is fragile. We reduce context switches, preserve focus, and avoid modal interruptions. Whenever possible, we make changes inline. We batch non-urgent updates so the surface doesn’t flicker or jump." },
+    { "id": "s3", "heading": "Cognitive Load", "body": "We measure cognitive load qualitatively: how many decisions before making progress? We trim branches and keep choices mutually exclusive. When advanced options are needed, we group them behind a clear control, not hidden behind mystery meat." },
+    { "id": "s4", "heading": "Focus Tools", "body": "We use spotlighting to guide attention: dim secondary regions during a critical input, increase contrast on the next target, and align motion toward the primary action. Focus tools are temporary and never lock the user in." },
+    { "id": "s5", "heading": "Exercises", "body": "Run a task with a stopwatch and note where time goes. Eliminate one decision and one mode switch. Add an immediate acknowledgement and remeasure." }
+  ]
+}

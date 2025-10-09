@@ -1,0 +1,11 @@
+{
+  "id": "ch10",
+  "title": "Accessible Vibes",
+  "sections": [
+    { "id": "s1", "heading": "Accessibility as Vibe", "body": "An inclusive product feels better for everyone. We set color contrast, keyboard navigation, and readable copy as vibe criteria, not compliance checkboxes. Accessibility makes interactions more predictable and reduces cognitive load." },
+    { "id": "s2", "heading": "Focus Management", "body": "We never trap focus. We provide visible indicators and reasonable tab order. Dialogs restore focus to the originating control when dismissed. Keyboard shortcuts are documented and discoverable." },
+    { "id": "s3", "heading": "Motion Sensitivity", "body": "We respect reduced motion preferences and avoid essential meaning encoded only in motion. We use opacity changes or scale adjustments as subtle alternatives. Users can turn off celebratory effects." },
+    { "id": "s4", "heading": "Copy and Reading Level", "body": "We aim for simple sentences, active voice, and consistent terminology. We avoid insider jargon and provide plain-language summaries for complex actions. Tooltips help but should not carry essential meaning alone." },
+    { "id": "s5", "heading": "Exercises", "body": "Audit a screen for keyboard-only use. Increase contrast for the most important call to action. Test with screen reader basics and rewrite any unclear labels." }
+  ]
+}

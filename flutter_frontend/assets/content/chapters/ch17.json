@@ -1,0 +1,11 @@
+{
+  "id": "ch17",
+  "title": "Guided Onboarding Journeys",
+  "sections": [
+    { "id": "s1", "heading": "First Run, First Feel", "body": "On first run, we make one promise clear and deliver one quick win. We avoid overwhelming tours. Instead we set a small goal and help users reach it in under a minute." },
+    { "id": "s2", "heading": "Scaffolding that Disappears", "body": "Tooltips and hints fade as confidence grows. We detect success and remove scaffolding to reduce clutter. Users should feel the app is learning with them." },
+    { "id": "s3", "heading": "Personalization not Profiling", "body": "We ask a few meaningful questions, not a survey. Answers shape defaults and content. We are upfront about how choices will be used and offer a reset path." },
+    { "id": "s4", "heading": "Repair-Friendly Onboarding", "body": "If sign-up fails, we keep entered data, explain the issue, and offer alternatives: magic links, social sign-in, or passwordless options. We never make users retype everything." },
+    { "id": "s5", "heading": "Exercises", "body": "Design a 3-step onboarding with a quick win at step 2. Write copy for an error that occurs at step 1 that preserves momentum and dignity." }
+  ]
+}

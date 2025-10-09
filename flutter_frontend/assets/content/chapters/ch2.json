@@ -5,17 +5,52 @@
     {
       "id": "s1",
       "heading": "Signals and Feedback",
-      "body": "Core to vibe coding is reading the signals your system emits and shaping feedback loops to guide development."
+      "body": "Signals are everything a user can perceive: text, color, motion, vibration, sound, and micro-delays. Feedback is the timely response that confirms intent. In vibe coding, we design signals with the same rigor as data models. We choose words that reduce risk, colors that encode status, and motion that carries state forward. Most importantly, we ensure feedback happens within 100–200ms, keeping momentum alive."
     },
     {
       "id": "s2",
       "heading": "Progressive Disclosure",
-      "body": "Reveal complexity as needed. Start with simple primitives, then layer on capabilities in context."
+      "body": "Reveal complexity as needed. Beginners need clarity and safety; experts need speed and control. Progressive disclosure means we default to a simple surface and let users expand complexity contextually. For example, we show a short summary with a 'More' affordance that expands in place. We temporarily freeze non-essential motion during expansion to prevent attention splits."
     },
     {
       "id": "s3",
       "heading": "Guided Flow",
-      "body": "Design flows that naturally lead users forward, reducing friction and cognitive load."
+      "body": "Guided flow reduces cognitive load by establishing a clear next step. Rather than forcing users to decide where to go, the interface suggests the natural continuation: a primary action that is visually stronger, spatially aligned, and narratively coherent with the previous step. Good guidance removes the need for help docs in everyday use."
+    },
+    {
+      "id": "s4",
+      "heading": "Recovery and Repair",
+      "body": "Vibe coding assumes mistakes will happen. We add repair paths like undo, draft states, and confirmation only where risk is real. Instead of modal confirmation for low-stakes actions, we prefer optimistic updates with a visible undo timer. When errors occur we avoid blame; the copy focuses on what happened and what the system will try next."
+    },
+    {
+      "id": "s5",
+      "heading": "Defaults That Carry",
+      "body": "Defaults drive outcomes. A great default is legible, reversible, and consistent. For instance, preselecting a recommended plan with a clear price explanation gives momentum without trickery. We always pair defaults with easy reversal, showing users that choosing the recommended path never traps them."
+    },
+    {
+      "id": "s6",
+      "heading": "Local-First",
+      "body": "Local-first keeps interactions fast, resilient, and respectful of user focus. You read and write to local state first, then synchronize in the background. UI always reflects the local truth while showing a subtle syncing signal. If the network disappears, the app keeps working. When the network returns, conflicts are addressed through intelligible rules and transparent prompts."
+    },
+    {
+      "id": "s7",
+      "heading": "Performance as a Feeling",
+      "body": "Performance is experienced, not just measured. A 300ms spinner can feel faster than 150ms of visual silence because the spinner communicates progress. We combine prefetching, optimistic UI, and choreography to maintain perceived speed. We avoid gratuitous motion that delays completion and prefer micro-animations that aid orientation."
+    },
+    {
+      "id": "s8",
+      "heading": "Affordances and Discoverability",
+      "body": "Controls must look like they are meant to be touched. Discoverability grows from consistency, naming, and placement. If your app uses chips as filters in one place and as toggles elsewhere, users hesitate. We reduce such ambiguity by standardizing the meaning of a pattern across the product."
+    },
+    {
+      "id": "s9",
+      "heading": "Cohesion Over Novelty",
+      "body": "Novel visuals and motion can be joyful, but coherence beats novelty. We pick a small set of patterns and use them everywhere. Policies for spacing, timing, and wording make new features feel like they were always meant to be there. This just-right familiarity is a huge part of good vibes."
+    },
+    {
+      "id": "s10",
+      "heading": "Exercises",
+      "body": "Choose a screen and label every signal: text blocks, icons, colors, motion, and delays. Decide which signal is the primary cue and which are secondary. Remove one signal and see if meaning survives. Add an undo path to the riskiest action. Time the primary interaction with a stopwatch and set a target budget."
     }
   ]
 }

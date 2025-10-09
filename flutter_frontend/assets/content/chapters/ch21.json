@@ -1,0 +1,12 @@
+{
+  "id": "ch21",
+  "title": "Vibe Coding Case Study: Notes App",
+  "sections": [
+    { "id": "s1", "heading": "Context", "body": "We build a simple notes app to apply vibe coding. The app supports creating, editing, and organizing notes. It runs on mobile and web with local-first persistence and background sync. Annotations in this book mirror the features we implement." },
+    { "id": "s2", "heading": "Beats", "body": "Beat 1: open app, see last note and a prominent 'New note' action. Beat 2: tap to create and type immediately. Beat 3: autosave and a subtle 'Synced' signal. Beat 4: add a tag chip and see filtered results without a reload." },
+    { "id": "s3", "heading": "Loops", "body": "We define loops for typing, saving, searching, and tagging. Typing acknowledges immediately. Saving is optimistic with a toast and undo. Searching updates results as you type with debounced queries. Tagging uses predictive chips." },
+    { "id": "s4", "heading": "Signals", "body": "Copy is short and warm. Colors encode only status, not decoration. Motion is light: inputs grow slightly on focus; cards fade in on create. Sync status sits in the corner, readable but calm." },
+    { "id": "s5", "heading": "Outcomes", "body": "Users report feeling fast and safe. Task completion times drop by 20%. Undo usage is steady, which indicates risk is handled without hesitation. Support tickets about lost work disappear. The vibe is quiet confidence." },
+    { "id": "s6", "heading": "Exercises", "body": "Fork the case study mentally into your product. Write beats, loops, and signals for one core flow. Implement optimistic UI for the most common action and measure the change." }
+  ]
+}

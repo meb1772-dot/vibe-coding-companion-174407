@@ -5,17 +5,47 @@
     {
       "id": "s1",
       "heading": "Pattern: Intent-First APIs",
-      "body": "Start from user intent and design APIs that make the common path obvious and ergonomic."
+      "body": "Start from user intent and design APIs that make the common path obvious and ergonomic. Instead of exposing low-level operations, create verbs that match what users actually want to achieve. For example, 'saveDraft(note)' expresses intent better than 'updateRecord(table, fields)'. Internally the API can still map to entities, but the external interface remains narrative."
     },
     {
       "id": "s2",
       "heading": "Pattern: Local-First Notes",
-      "body": "Keep user notes and highlights responsive and resilient by defaulting to local-first persistence."
+      "body": "For notes, we apply a local-first rule: edits appear instantly and are saved offline first. A syncing chip indicates background status. Conflict resolution prioritizes recency and explicit user actions. We surface merge prompts only when needed and present clear previews so users see what will change."
     },
     {
       "id": "s3",
       "heading": "Pattern: Progressive Rendering",
-      "body": "Render meaningful content early and refine progressively to keep interactions fluid on all devices."
+      "body": "Render meaningful content early and refine progressively. Skeletons occupy space while loading. Above-the-fold content renders first. We avoid layout shifts by reserving dimensions. When richer data arrives, we crossfade or gently morph rather than snapping, preserving spatial memory."
+    },
+    {
+      "id": "s4",
+      "heading": "Pattern: Undo-First Risk Handling",
+      "body": "Before adding confirmations, try undo. Users maintain momentum while retaining control. For truly destructive actions, combine a short countdown toast with undo and an optional second confirm for irreversible steps. Copy should emphasize outcomes: 'Item archived. Undo' instead of 'Are you sure?'."
+    },
+    {
+      "id": "s5",
+      "heading": "Pattern: Contextual Help Chips",
+      "body": "Place small, tappable chips near complex inputs that explain consequences: 'Private by default', 'Shareable link generated on publish'. These chips teach by proximity, reduce surprise, and act as tiny docs that never go out of date. Keep them short and specific."
+    },
+    {
+      "id": "s6",
+      "heading": "Pattern: Focus-Preserving Edits",
+      "body": "When users edit, maintain focus and caret position whenever possible. Avoid reflow that jumps the viewport. Batch minor layout changes after input events. If the keyboard is open, do not steal focus for celebratory dialogs; use inline confirmation instead."
+    },
+    {
+      "id": "s7",
+      "heading": "Pattern: Momentum Navigation",
+      "body": "Offer a forward path with a strong visual anchor. After completing a step, the primary action transforms subtly into the next step. Momentum navigation reduces decision fatigue and keeps people in flow. Provide an escape hatch to skip ahead and a clear breadcrumb to go back."
+    },
+    {
+      "id": "s8",
+      "heading": "Pattern: Predictive Prefill",
+      "body": "Use available context to prefill forms: timezone, locale, previous choices, or inferred intent. Prefill should be editable, clearly marked, and easy to reset. The goal is not to guess perfectly but to reduce needless typing while signaling that the system is paying attention."
+    },
+    {
+      "id": "s9",
+      "heading": "Exercises",
+      "body": "Pick a feature and rename API calls to reflect user intent. Implement an undo for the riskiest action. Convert a blocking confirmation into optimistic UI with a toast. Add a help chip near a confusing setting and measure support tickets over two weeks."
     }
   ]
 }

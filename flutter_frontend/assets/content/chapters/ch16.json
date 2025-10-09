@@ -1,0 +1,11 @@
+{
+  "id": "ch16",
+  "title": "Vibe Testing: From Feels to Facts",
+  "sections": [
+    { "id": "s1", "heading": "Calibrating Taste", "body": "We treat taste as a skill. Teams calibrate by reviewing great examples together and discussing why they feel good. Over time we turn taste into lightweight checklists so it scales." },
+    { "id": "s2", "heading": "Heuristic Reviews", "body": "We run heuristic reviews using our vibe principles: signals, flow, and safety. Each heuristic maps to quick checks—latency under budget, undo present, copy aligned with tone." },
+    { "id": "s3", "heading": "Usability Sessions", "body": "We run short sessions with 3–5 participants to find major issues. We ask users to think aloud. We measure dwell times and note hesitations. Findings map to backlog items with vibe tags." },
+    { "id": "s4", "heading": "A/B and Multivariate", "body": "When stakes are high, we experiment with copy, timing, and layout. We choose metrics that reflect retention or task completion rather than raw clicks. Experiments are time-bounded and share results." },
+    { "id": "s5", "heading": "Exercises", "body": "Create a 10-item vibe checklist for PR review. Run two usability sessions and record the top three frictions. Adjust one loop and measure impact for a week." }
+  ]
+}

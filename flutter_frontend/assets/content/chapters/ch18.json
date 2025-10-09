@@ -1,0 +1,11 @@
+{
+  "id": "ch18",
+  "title": "Intent-First APIs Walkthrough",
+  "sections": [
+    { "id": "s1", "heading": "From CRUD to Intent", "body": "We translate UI verbs directly into APIs: 'createNote', 'archiveNote', 'shareNote'. We hide tables and join logic behind application language. This improves clarity and reduces coupling between UI and storage details." },
+    { "id": "s2", "heading": "Shaping Responses", "body": "Responses are story fragments: they include just enough to update the scene. We return stable identifiers, display-ready summaries, and status flags for syncing and undo." },
+    { "id": "s3", "heading": "Error Semantics", "body": "Errors are also intents: 'policyDenied', 'rateLimited', 'networkDown'. We avoid generic 500s at the edges of the app and categorize errors into meaningful types. UI then maps types to repair paths." },
+    { "id": "s4", "heading": "Versioning the Narrative", "body": "APIs evolve without breaking the story by adding fields and keeping defaults stable. We document change impact in vibe terms: 'undo becomes optional when server confirms within 80ms'." },
+    { "id": "s5", "heading": "Exercises", "body": "Rewrite an API surface to reflect intents. Define error types and map them to visible, friendly messages in the UI." }
+  ]
+}

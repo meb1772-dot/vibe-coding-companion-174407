@@ -5,17 +5,52 @@
     {
       "id": "s1",
       "heading": "Welcome",
-      "body": "Vibe coding is a mindset for crafting delightful software. In this introduction, you'll learn what it is and why it matters."
+      "body": "Vibe coding is a practice for crafting software that feels natural, friendly, and responsive even when complexity grows under the surface. Instead of bolting delight onto a finished product, vibe coding guides decisions from the earliest sketch to the final release. It asks a short set of questions at every step: how does this flow feel? What signals do we send to the user? Where is friction that we can melt away? When you begin here, design and engineering stop working at cross-purposes and start playing the same song."
     },
     {
       "id": "s2",
-      "heading": "What You'll Learn",
-      "body": "We'll cover the foundations, build intuition through examples, and prepare you for interactive exercises."
+      "heading": "Why Vibes Matter",
+      "body": "People remember how software makes them feel. Performance numbers and lists of features matter, but the difference between a tool you trust and one you avoid shows up in the first five seconds: timing, clarity, and small moments of guidance. Vibe coding converts intangible feelings into repeatable techniques. We connect principles like progressive disclosure, guided flow, and feedback loops to practical tactics such as timing animations, structuring copy, and creating repair paths when something goes wrong."
     },
     {
       "id": "s3",
-      "heading": "Setting Expectations",
-      "body": "This app provides a smooth reading experience with local-first annotations, making it easy to capture insights as you go."
+      "heading": "A Simple Definition",
+      "body": "Vibe coding is building with intention for emotion, speed, and trust. The intention shows up in carefully chosen defaults, steady motion that matches user expectations, and pathways that are difficult to misuse. We treat the interface as a dialog, not a static list of screens: each action is a question, each response is an answer, and the system’s tone is consistent. The code supports this by being explicit about intent, explicit about state, and resilient to interruptions."
+    },
+    {
+      "id": "s4",
+      "heading": "The Three Pillars",
+      "body": "Vibe coding stands on three pillars: signals, flow, and safety. Signals are what users can sense: text, icons, timing, haptics, and audio. Flow is the harmony between actions: fewer modes, fewer dead ends, and the right amount of tension to keep attention. Safety is the ability to experiment without fear: undo paths, preview states, and an obvious way to recover. When these pillars are healthy, the product feels confident and kind."
+    },
+    {
+      "id": "s5",
+      "heading": "A Story-First Approach",
+      "body": "We start with a story instead of a screen. A short narrative captures the first thirty seconds of a new user’s life: what do they want, what do they see, what do they try, and what assurances do they get? We translate the story into tiny design beats—micro-interactions that form a rhythm. Only then do we expand into architecture and APIs, keeping the story intact. This sequence prevents architecture from erasing the vibe and gives developers clear targets to verify."
+    },
+    {
+      "id": "s6",
+      "heading": "Examples You Can Feel",
+      "body": "Consider a note-taking app. Add a note, and it appears instantly with a soft highlight that fades after a breath. The input stays focused so you can continue typing. A small toast mentions autosave and the keyboard doesn’t disappear. If connectivity blinks, the app keeps your work locally with a visible syncing dot. These are small choices, but their sum communicates: you are safe here, your focus matters, and the system keeps up with you."
+    },
+    {
+      "id": "s7",
+      "heading": "Measuring the Invisible",
+      "body": "You can measure vibes without losing nuance. Track interaction latency, animation duration, and the number of times people hesitate or search. Count confirmations that weren’t needed. Try A/B variants of copy. Ask users to narrate out loud and note where their attention spikes or drops. The goal is not to mechanize feeling, but to capture leading indicators of trust so you can iterate toward a smoother rhythm."
+    },
+    {
+      "id": "s8",
+      "heading": "Exercises",
+      "body": "Exercise 1: Write a 30-second first-run story for your app. Focus on how the user feels at each beat. Exercise 2: Identify one flow where users slow down. Replace two clicks with one by surfacing a helpful default. Exercise 3: Introduce a repair path—where would an Undo make the experience safer? Implement a visible, accessible undo toast and watch how confidence changes."
+    },
+    {
+      "id": "s9",
+      "heading": "What This Book Covers",
+      "body": "We will build a shared vocabulary for vibes, translate it into design patterns and code structures, and walk through case studies across mobile and web. You will learn to design signals, tune flow, and engineer safety into the happy path and the messy path. Along the way we will convert stories into testable behaviors and build a small playground app to practice the craft."
+    },
+    {
+      "id": "s10",
+      "heading": "How to Read This Book",
+      "body": "Read from start to finish if the ideas are new, or jump to chapters that match your current challenges: onboarding, local-first persistence, low-latency UI, and ethical defaults. Use the annotations feature to capture insights and decisions for your team. The vibe mindset is most effective when shared, so invite a teammate to read with you and compare notes."
     }
   ]
 }

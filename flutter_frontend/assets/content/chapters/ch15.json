@@ -1,0 +1,11 @@
+{
+  "id": "ch15",
+  "title": "Signals: Observability by Design",
+  "sections": [
+    { "id": "s1", "heading": "Why Observe", "body": "We cannot tune vibes we cannot see. Observability is not just logs and metrics; it is purposeful instrumentation of beats and loops. We capture timing and state changes that relate to human experience." },
+    { "id": "s2", "heading": "Meaningful Metrics", "body": "We track acknowledgement latency, time-to-first-meaningful-paint, and undo usage. We avoid vanity graphs and focus on indicators that correlate with perceived quality and trust." },
+    { "id": "s3", "heading": "Tracing User Journeys", "body": "We attach a journey ID to flows so we can analyze where momentum stalls. Visualizing these traces reveals branching points that need clarity or defaults." },
+    { "id": "s4", "heading": "Privacy-aware Telemetry", "body": "We collect just enough. We aggregate where possible and anonymize or hash sensitive identifiers. Telemetry is documented and opt-out paths are respected." },
+    { "id": "s5", "heading": "Exercises", "body": "Instrument one loop end-to-end. Create a small dashboard with timing percentiles and undo rates. Use the results to adjust budgets and copy." }
+  ]
+}

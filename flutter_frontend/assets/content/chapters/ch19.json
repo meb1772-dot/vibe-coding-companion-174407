@@ -1,0 +1,11 @@
+{
+  "id": "ch19",
+  "title": "Patterns for Flow Preservation",
+  "sections": [
+    { "id": "s1", "heading": "Minimize Mode Switching", "body": "We reduce editing vs viewing modes. Where possible, we edit in place. If modes are necessary, we make them obvious and easy to toggle. The cursor and scroll position stay stable across mode changes." },
+    { "id": "s2", "heading": "Batching and Debounce", "body": "We batch state updates that would cause reflow and debounce network calls to avoid jitter. This balance keeps UI fluid without starving feedback loops." },
+    { "id": "s3", "heading": "Spatial Anchors", "body": "We anchor new elements near their triggers. A floating toolbar appears close to the selection; a toast anchors to the bottom. Anchors create a predictable map that reduces visual search." },
+    { "id": "s4", "heading": "Inline Progress", "body": "Whenever work takes time, progress appears inline near the affected content. We use skeletons and shimmer sparingly and avoid blocking overlays for lightweight operations." },
+    { "id": "s5", "heading": "Exercises", "body": "Turn a two-mode editor into an inline editor for one field. Add inline progress to a long-running operation and measure perceived latency." }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "ch11",
+  "title": "Vibe Coding with Teams",
+  "sections": [
+    { "id": "s1", "heading": "Shared Vocabulary", "body": "Teams move faster when they share words for vibes: beat, loop, repair path, momentum, and safety. We add these to our design reviews and code reviews. We ask: what beat are we shipping? Does the loop meet the budget? Where is the repair path?" },
+    { "id": "s2", "heading": "Artifacts that Travel", "body": "We create artifacts that work across roles: narrative briefs, loop diagrams, and vibe checklists. We keep them short and current. These documents reduce misunderstanding and make onboarding smoother." },
+    { "id": "s3", "heading": "Review Rituals", "body": "We run vibe reviews alongside functional reviews. Someone narrates the story while another person measures timing. We verify copy tone and accessibility basics. Reviewers log both findings and feelings." },
+    { "id": "s4", "heading": "Healthy Tensions", "body": "Vibe coding welcomes tension between speed and polish. The rule is to ship coherent vibes at each milestone, not half-finished feelings. We prioritize beats that uphold trust and defer decoration." },
+    { "id": "s5", "heading": "Exercises", "body": "Add a vibe section to your pull request template. Include a narrative snippet, a timing budget, and what changed about safety. Rotate a 'vibe buddy' who focuses on user feelings during review." }
+  ]
+}

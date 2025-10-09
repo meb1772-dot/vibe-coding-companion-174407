@@ -1,0 +1,12 @@
+{
+  "id": "ch8",
+  "title": "Local-First Mindset",
+  "sections": [
+    { "id": "s1", "heading": "Why Local-First", "body": "Local-first apps feel immediate, respect attention, and work offline by default. The network augments rather than dictates the experience. This flips the typical stack: UI binds to local models, and sync is a background service with clear status signals." },
+    { "id": "s2", "heading": "Consistency Model", "body": "We choose a consistency model we can communicate: last-writer-wins for notes might be fine; collaborative docs need CRDTs or OT. The key is not perfection but predictability, with visible conflict prompts only when necessary." },
+    { "id": "s3", "heading": "Sync Status as a Signal", "body": "We show sync status with a small, persistent indicator: 'Synced', 'Syncing', 'Offline'. The label is readable, non-alarming, and sits near the relevant content. When connectivity returns, the indicator quietly resolves to 'Synced'." },
+    { "id": "s4", "heading": "Error Handling", "body": "Failures don’t block local work. We queue operations, persist them, and retry with backoff. Users can see queued actions and cancel if needed. Copy stays friendly and action-oriented." },
+    { "id": "s5", "heading": "Security and Privacy", "body": "Local-first implies data at rest on the device. We educate users about encryption and provide options for passcodes and biometric locks. We avoid surprising sync policy changes and default to minimal sharing." },
+    { "id": "s6", "heading": "Exercises", "body": "Add a visible sync indicator to a view. Implement a write-through cache that updates local state first and then posts to an API. Simulate offline conditions and verify all actions remain usable." }
+  ]
+}

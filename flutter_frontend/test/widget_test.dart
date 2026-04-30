@@ -53,8 +53,10 @@ void main() {
       (WidgetTester tester) async {
     await _pumpApp(tester);
 
-    // Reader toolbar search icon.
-    await tester.tap(find.byIcon(Icons.search));
+    // Reader toolbar search icon (avoid ambiguous Icons.search in drawer filter field).
+    final Finder searchButton = find.byTooltip('Search');
+    await tester.ensureVisible(searchButton);
+    await tester.tap(searchButton);
     await tester.pump(const Duration(milliseconds: 200));
 
     // Type search term.
@@ -77,7 +79,9 @@ void main() {
     await _pumpApp(tester);
 
     // Bookmark current section.
-    await tester.tap(find.byIcon(Icons.bookmark_border));
+    final Finder bookmarkButton = find.byTooltip('Bookmark section');
+    await tester.ensureVisible(bookmarkButton);
+    await tester.tap(bookmarkButton);
     await tester.pump(const Duration(milliseconds: 200));
 
     // Go to Bookmarks tab.
@@ -92,18 +96,23 @@ void main() {
   testWidgets('Settings: open settings sheet and change a slider', (WidgetTester tester) async {
     await _pumpApp(tester);
 
-    await tester.tap(find.byIcon(Icons.tune));
+    final Finder settingsButton = find.byTooltip('Settings');
+    await tester.ensureVisible(settingsButton);
+    await tester.tap(settingsButton);
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Settings'), findsOneWidget);
 
     // Drag the first slider slightly.
     final Finder slider = find.byType(Slider).first;
+    await tester.ensureVisible(slider);
     await tester.drag(slider, const Offset(40, 0));
     await tester.pump(const Duration(milliseconds: 200));
 
     // Close.
-    await tester.tap(find.text('Done'));
+    final Finder doneButton = find.text('Done');
+    await tester.ensureVisible(doneButton);
+    await tester.tap(doneButton);
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('Settings'), findsNothing);
   });
@@ -126,7 +135,9 @@ void main() {
     expect(find.text(noteText), findsOneWidget);
 
     // Tap edit icon on the note card.
-    await tester.tap(find.byIcon(Icons.edit_outlined).first);
+    final Finder editButton = find.byTooltip('Edit note').first;
+    await tester.ensureVisible(editButton);
+    await tester.tap(editButton);
     await tester.pump(const Duration(milliseconds: 200));
 
     const String updated = 'Updated note';

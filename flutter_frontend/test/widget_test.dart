@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:vibe_coding_companion/app/app.dart';
 
 Future<void> _pumpApp(WidgetTester tester) async {
+  // SharedPreferences is used during app bootstrap (LocalPersistenceService).
+  // In widget tests, we must provide a mock store or the plugin init path can
+  // hang/fail and the UI stays stuck on the loading spinner.
+  SharedPreferences.setMockInitialValues(<String, Object?>{});
   await tester.pumpWidget(const VibeCodingCompanionApp());
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 200));
@@ -11,6 +16,7 @@ Future<void> _pumpApp(WidgetTester tester) async {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   testWidgets('App boots and shows title', (WidgetTester tester) async {
     await _pumpApp(tester);
     expect(find.text('Vibe Coding Companion'), findsWidgets);

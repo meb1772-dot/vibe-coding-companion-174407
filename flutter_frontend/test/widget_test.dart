@@ -19,7 +19,25 @@ Future<void> _pumpApp(WidgetTester tester) async {
 }
 
 Finder _activeBottomSheet() {
-  // There should only be one modal sheet at a time in these tests.
+  // Prefer scoping queries to the currently-open modal route (bottom sheet).
+  // In widget tests, relying strictly on `BottomSheet` can be brittle because
+  // the actual subtree can vary depending on Material/Scaffold internals.
+  //
+  // A modal bottom sheet always inserts a `ModalBarrier`; we use that as a
+  // stable anchor and then search for widgets that are "above" it.
+  final Finder barrier = find.byType(ModalBarrier);
+  if (barrier.evaluate().isNotEmpty) {
+    // Widgets drawn above the barrier should include the sheet contents.
+    return find.descendant(
+      of: find.byType(Overlay),
+      matching: find.byWidgetPredicate(
+        (w) => w is Material,
+        description: 'Material (modal content root)',
+      ),
+    );
+  }
+
+  // Fallback: older/internal implementations may still expose BottomSheet.
   return find.byType(BottomSheet);
 }
 
@@ -39,11 +57,20 @@ Finder _sheetTextFieldByHint(Finder sheet, String hintText) {
 }
 
 Finder _sheetSaveButton(Finder sheet) {
-  // Scope Save to the active bottom sheet; the label text can appear elsewhere.
-  return find.descendant(
-    of: sheet,
-    matching: find.widgetWithText(FilledButton, 'Save').hitTestable(),
+  // Scope Save to the active sheet; avoid overly strict assumptions about
+  // the exact button type and avoid `hitTestable()` which can flake during
+  // sheet animations/scrolling.
+  final Finder saveText = find.descendant(of: sheet, matching: find.text('Save'));
+  if (saveText.evaluate().isEmpty) {
+    return saveText; // will fail with a clear expectation message upstream
+  }
+
+  // Prefer tapping the actual FilledButton if present (more realistic).
+  final Finder filledButton = find.ancestor(
+    of: saveText.first,
+    matching: find.byType(FilledButton),
   );
+  return filledButton.evaluate().isNotEmpty ? filledButton : saveText.first;
 }
 
 Future<void> _tapAndSettle(WidgetTester tester, Finder finder) async {

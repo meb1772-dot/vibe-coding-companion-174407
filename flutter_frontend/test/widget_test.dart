@@ -42,7 +42,7 @@ Finder _sheetSaveButton(Finder sheet) {
   // Scope Save to the active bottom sheet; the label text can appear elsewhere.
   return find.descendant(
     of: sheet,
-    matching: find.widgetWithText(FilledButton, 'Save'),
+    matching: find.widgetWithText(FilledButton, 'Save').hitTestable(),
   );
 }
 

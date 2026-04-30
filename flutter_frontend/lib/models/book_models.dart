@@ -2,6 +2,7 @@
 ///
 /// These are intentionally simple and serializable to support local persistence
 /// and stable identifiers for notes and reading state.
+library;
 
 class Book {
   const Book({

@@ -27,22 +27,36 @@ void main() {
     await _pumpApp(tester);
 
     // Switch to Notes tab (narrow layout shows bottom nav in tests).
-    await tester.tap(find.text('Notes'));
+    final Finder notesTab = find.text('Notes');
+    await tester.ensureVisible(notesTab);
+    await tester.tap(notesTab);
     await tester.pump(const Duration(milliseconds: 200));
 
     // Open add note sheet.
-    await tester.tap(find.text('Add'));
+    final Finder addButton = find.text('Add');
+    await tester.ensureVisible(addButton);
+    await tester.tap(addButton);
     await tester.pump(const Duration(milliseconds: 200));
 
     // Enter quote + note body and save.
     const String quoteText = 'A quote snippet';
     const String noteText = 'Test note body';
-    expect(find.byType(TextField), findsAtLeastNWidgets(1));
-    await tester.enterText(find.byType(TextField).first, quoteText);
+    final Finder sheet = find.byType(BottomSheet);
+    expect(sheet, findsOneWidget);
+
+    final Finder sheetQuoteField = find.descendant(of: sheet, matching: find.byIcon(Icons.format_quote));
+    expect(sheetQuoteField, findsOneWidget);
+
+    final Finder sheetBodyField = find.descendant(of: sheet, matching: find.widgetWithText(TextField, 'Write your note…'));
+    expect(sheetBodyField, findsOneWidget);
+
+    await tester.enterText(sheetQuoteField, quoteText);
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.enterText(find.byType(TextField).last, noteText);
+    await tester.enterText(sheetBodyField, noteText);
     await tester.pump(const Duration(milliseconds: 100));
-    await tester.tap(find.text('Save'));
+    final Finder saveButton = find.text('Save');
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
     await tester.pump(const Duration(milliseconds: 300));
 
     // Verify note appears.
@@ -60,18 +74,28 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     // Type search term.
-    await tester.enterText(find.byType(TextField), 'guardrails');
+    final Finder sheet = find.byType(BottomSheet);
+    expect(sheet, findsOneWidget);
+
+    final Finder searchField = find.descendant(
+      of: sheet,
+      matching: find.widgetWithText(TextField, 'Search chapters and content…'),
+    );
+    expect(searchField, findsOneWidget);
+
+    await tester.enterText(searchField, 'guardrails');
     await tester.pump(const Duration(milliseconds: 200));
 
     // Expect at least one result list tile.
-    expect(find.byType(ListTile), findsWidgets);
+    final Finder resultTile = find.descendant(of: sheet, matching: find.byType(ListTile));
+    expect(resultTile, findsWidgets);
 
     // Tap first result to jump.
-    await tester.tap(find.byType(ListTile).first);
+    await tester.tap(resultTile.first);
     await tester.pump(const Duration(milliseconds: 250));
 
     // Search sheet closed; still in reader view.
-    expect(find.byIcon(Icons.search), findsOneWidget);
+    expect(find.byTooltip('Search'), findsOneWidget);
   });
 
   testWidgets('Bookmarks: bookmark current section and see it in Bookmarks tab',
@@ -85,7 +109,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     // Go to Bookmarks tab.
-    await tester.tap(find.text('Bookmarks'));
+    final Finder bookmarksTab = find.text('Bookmarks');
+    await tester.ensureVisible(bookmarksTab);
+    await tester.tap(bookmarksTab);
     await tester.pump(const Duration(milliseconds: 250));
 
     // Should show at least one bookmark list tile.
@@ -120,17 +146,29 @@ void main() {
   testWidgets('Edit note: create note then edit it', (WidgetTester tester) async {
     await _pumpApp(tester);
 
-    await tester.tap(find.text('Notes'));
+    final Finder notesTab = find.text('Notes');
+    await tester.ensureVisible(notesTab);
+    await tester.tap(notesTab);
     await tester.pump(const Duration(milliseconds: 200));
 
     // Add a note.
-    await tester.tap(find.text('Add'));
+    final Finder addButton = find.text('Add');
+    await tester.ensureVisible(addButton);
+    await tester.tap(addButton);
     await tester.pump(const Duration(milliseconds: 200));
 
     const String noteText = 'Original note';
-    await tester.enterText(find.byType(TextField).last, noteText);
+    final Finder sheet = find.byType(BottomSheet);
+    expect(sheet, findsOneWidget);
+
+    final Finder sheetBodyField = find.descendant(of: sheet, matching: find.widgetWithText(TextField, 'Write your note…'));
+    expect(sheetBodyField, findsOneWidget);
+
+    await tester.enterText(sheetBodyField, noteText);
     await tester.pump(const Duration(milliseconds: 100));
-    await tester.tap(find.text('Save'));
+    final Finder saveButton = find.text('Save');
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text(noteText), findsOneWidget);
 
@@ -141,9 +179,20 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     const String updated = 'Updated note';
-    await tester.enterText(find.byType(TextField).last, updated);
+    final Finder editSheet = find.byType(BottomSheet);
+    expect(editSheet, findsOneWidget);
+
+    final Finder editBodyField = find.descendant(
+      of: editSheet,
+      matching: find.widgetWithText(TextField, 'Write your note…'),
+    );
+    expect(editBodyField, findsOneWidget);
+
+    await tester.enterText(editBodyField, updated);
     await tester.pump(const Duration(milliseconds: 100));
-    await tester.tap(find.text('Save'));
+    final Finder editSaveButton = find.text('Save');
+    await tester.ensureVisible(editSaveButton);
+    await tester.tap(editSaveButton);
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text(updated), findsOneWidget);

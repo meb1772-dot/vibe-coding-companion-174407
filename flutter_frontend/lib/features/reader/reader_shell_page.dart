@@ -5,7 +5,10 @@ import 'package:uuid/uuid.dart';
 import '../../data/sample_book.dart';
 import '../../models/book_models.dart';
 import '../../models/note_models.dart';
+import '../../models/search_models.dart';
+import '../../models/settings_models.dart';
 import '../../services/local_persistence_service.dart';
+import '../settings/settings_sheet.dart';
 
 class ReaderShellPage extends StatefulWidget {
   const ReaderShellPage({super.key});
@@ -28,9 +31,14 @@ class _ReaderShellPageState extends State<ReaderShellPage> {
   bool _loading = true;
   String? _errorMessage;
 
-  int _bottomTabIndex = 0; // 0 = Reader, 1 = Notes
+  int _bottomTabIndex = 0; // 0 = Reader, 1 = Notes, 2 = Bookmarks, 3 = All notes
 
-  double _fontScale = 1.0;
+  AppSettings _settings = const AppSettings(
+    fontScale: 1.0,
+    lineHeight: 1.6,
+    showNotesPaneOnWide: true,
+    bookmarkedSectionIds: <String>[],
+  );
 
   @override
   void initState() {
@@ -45,6 +53,7 @@ class _ReaderShellPageState extends State<ReaderShellPage> {
       final Book loadedBook = await _bookRepository.loadBook();
       final List<Note> loadedNotes = await _persistence.loadNotes();
       final ReadingProgress? progress = await _persistence.loadProgress();
+      final AppSettings? loadedSettings = await _persistence.loadSettings();
 
       final int chapterIndex = progress?.chapterIndex ?? 0;
       final int sectionIndex = progress?.sectionIndex ?? 0;
@@ -52,6 +61,8 @@ class _ReaderShellPageState extends State<ReaderShellPage> {
       setState(() {
         _book = loadedBook;
         _notes = loadedNotes;
+        _settings = loadedSettings ?? _settings;
+
         _chapterIndex = chapterIndex.clamp(0, loadedBook.chapters.length - 1);
         _sectionIndex = sectionIndex.clamp(
           0,
@@ -82,6 +93,10 @@ class _ReaderShellPageState extends State<ReaderShellPage> {
     return ch.sections[_sectionIndex];
   }
 
+  String _currentSectionIdOrEmpty() => _currentSection?.id ?? '';
+
+  bool _isBookmarked(String sectionId) => _settings.bookmarkedSectionIds.contains(sectionId);
+
   List<Note> _notesForSection(String sectionId) {
     return _notes
         .where((n) => n.sectionId == sectionId)
@@ -99,6 +114,10 @@ class _ReaderShellPageState extends State<ReaderShellPage> {
 
   Future<void> _persistNotes() async {
     await _persistence.saveNotes(_notes);
+  }
+
+  Future<void> _persistSettings() async {
+    await _persistence.saveSettings(_settings);
   }
 
   void _selectChapterSection({required int chapterIndex, required int sectionIndex}) {
@@ -149,7 +168,11 @@ class _ReaderShellPageState extends State<ReaderShellPage> {
     _selectChapterSection(chapterIndex: c, sectionIndex: s);
   }
 
-  void _addNote({required String sectionId, String? quote, required String body}) {
+  void _addNote({
+    required String sectionId,
+    String? quote,
+    required String body,
+  }) {
     final Note note = Note(
       id: _uuid.v4(),
       sectionId: sectionId,
@@ -166,6 +189,29 @@ class _ReaderShellPageState extends State<ReaderShellPage> {
     _persistNotes();
   }
 
+  void _editNote({
+    required String noteId,
+    required String body,
+    String? quote,
+  }) {
+    setState(() {
+      _notes = _notes
+          .map(
+            (n) => n.id == noteId
+                ? Note(
+                    id: n.id,
+                    sectionId: n.sectionId,
+                    createdAtEpochMs: n.createdAtEpochMs,
+                    body: body.trim(),
+                    quote: (quote == null || quote.trim().isEmpty) ? null : quote.trim(),
+                  )
+                : n,
+          )
+          .toList(growable: false);
+    });
+    _persistNotes();
+  }
+
   void _deleteNote(String noteId) {
     setState(() {
       _notes = _notes.where((n) => n.id != noteId).toList(growable: false);
@@ -173,7 +219,104 @@ class _ReaderShellPageState extends State<ReaderShellPage> {
     _persistNotes();
   }
 
+  void _toggleBookmarkForCurrentSection() {
+    final String sectionId = _currentSectionIdOrEmpty();
+    if (sectionId.isEmpty) return;
+
+    final List<String> next = List<String>.from(_settings.bookmarkedSectionIds);
+    if (next.contains(sectionId)) {
+      next.remove(sectionId);
+    } else {
+      next.insert(0, sectionId);
+    }
+
+    setState(() {
+      _settings = _settings.copyWith(bookmarkedSectionIds: next);
+    });
+    _persistSettings();
+  }
+
   bool _isWideLayout(BoxConstraints constraints) => constraints.maxWidth >= 1000;
+
+  List<SearchResult> _search(String query) {
+    final Book? b = _book;
+    if (b == null) return const <SearchResult>[];
+    final String q = query.trim().toLowerCase();
+    if (q.isEmpty) return const <SearchResult>[];
+
+    final List<SearchResult> results = <SearchResult>[];
+    for (final (cIdx, ch) in b.chapters.indexed) {
+      for (final (sIdx, sec) in ch.sections.indexed) {
+        final String haystack =
+            '${ch.title}\n${sec.title}\n${sec.markdown}'.toLowerCase();
+        if (!haystack.contains(q)) continue;
+
+        // Create a small preview snippet around the first occurrence.
+        final int at = haystack.indexOf(q);
+        final String raw = '${ch.title} — ${sec.title}';
+        final int ctxStart = (at - 30).clamp(0, haystack.length);
+        final int ctxEnd = (at + q.length + 60).clamp(0, haystack.length);
+        final String ctx = sec.markdown
+            .replaceAll('\n', ' ')
+            .replaceAll(RegExp(r'\s+'), ' ')
+            .trim();
+        final String preview = ctx.isEmpty
+            ? raw
+            : ctx.substring(
+                0,
+                ctx.length.clamp(0, 140),
+              );
+
+        results.add(
+          SearchResult(
+            chapterIndex: cIdx,
+            sectionIndex: sIdx,
+            chapter: ch,
+            section: sec,
+            matchContext: preview,
+          ),
+        );
+      }
+    }
+
+    return results.take(50).toList(growable: false);
+  }
+
+  String _exportNotesPlainText() {
+    final Book? b = _book;
+    if (b == null) return '';
+    final StringBuffer sb = StringBuffer();
+    sb.writeln(b.title);
+    sb.writeln('Exported notes');
+    sb.writeln('');
+
+    final List<Note> sorted = _notes.toList(growable: false)
+      ..sort((a, b) => b.createdAtEpochMs.compareTo(a.createdAtEpochMs));
+
+    for (final note in sorted) {
+      final _SectionLocator? loc = _locateSection(b, note.sectionId);
+      final String sectionLabel = loc == null
+          ? '(Unknown section)'
+          : '${loc.chapter.title} / ${loc.section.title}';
+      final DateTime dt = DateTime.fromMillisecondsSinceEpoch(note.createdAtEpochMs);
+
+      sb.writeln(sectionLabel);
+      sb.writeln(
+        '${dt.year.toString().padLeft(4, '0')}-'
+        '${dt.month.toString().padLeft(2, '0')}-'
+        '${dt.day.toString().padLeft(2, '0')} '
+        '${dt.hour.toString().padLeft(2, '0')}:'
+        '${dt.minute.toString().padLeft(2, '0')}',
+      );
+      if (note.quote != null && note.quote!.trim().isNotEmpty) {
+        sb.writeln('Quote: “${note.quote}”');
+      }
+      sb.writeln(note.body);
+      sb.writeln('\n---\n');
+    }
+
+    return sb.toString();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -208,6 +351,7 @@ class _ReaderShellPageState extends State<ReaderShellPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final bool wide = _isWideLayout(constraints);
+        final bool showNotesPane = wide && _settings.showNotesPaneOnWide;
 
         final Widget chapterNav = _ChapterNavigation(
           book: book,
@@ -221,24 +365,63 @@ class _ReaderShellPageState extends State<ReaderShellPage> {
           chapterTitle: chapter.title,
           sectionTitle: section.title,
           markdown: section.markdown,
-          fontScale: _fontScale,
-          onFontScaleChanged: (v) {
-            setState(() {
-              _fontScale = v;
-            });
-          },
+          fontScale: _settings.fontScale,
+          lineHeight: _settings.lineHeight,
+          bookmarked: _isBookmarked(section.id),
+          onToggleBookmark: _toggleBookmarkForCurrentSection,
           onPrev: _goPrev,
           onNext: _goNext,
           onAddNotePressed: () async {
-            // UI operation done synchronously from build event handlers.
             await showModalBottomSheet<void>(
               context: context,
               isScrollControlled: true,
               showDragHandle: true,
               builder: (context) {
-                return _AddNoteSheet(
+                return _AddOrEditNoteSheet(
+                  title: 'Add note',
                   sectionTitle: section.title,
-                  onSubmit: (body) => _addNote(sectionId: section.id, body: body),
+                  initialBody: '',
+                  initialQuote: '',
+                  showQuoteField: true,
+                  onSubmit: (body, quote) => _addNote(
+                    sectionId: section.id,
+                    body: body,
+                    quote: quote,
+                  ),
+                );
+              },
+            );
+          },
+          onSearchPressed: () async {
+            await showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              showDragHandle: true,
+              builder: (context) {
+                return _SearchSheet(
+                  onSearch: _search,
+                  onJumpTo: (cIdx, sIdx) => _selectChapterSection(
+                    chapterIndex: cIdx,
+                    sectionIndex: sIdx,
+                  ),
+                );
+              },
+            );
+          },
+          onSettingsPressed: () async {
+            await showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              showDragHandle: true,
+              builder: (context) {
+                return SettingsSheet(
+                  initialSettings: _settings,
+                  onChanged: (next) {
+                    setState(() {
+                      _settings = next;
+                    });
+                    _persistSettings();
+                  },
                 );
               },
             );
@@ -246,23 +429,115 @@ class _ReaderShellPageState extends State<ReaderShellPage> {
         );
 
         final Widget notesPane = _NotesPane(
-          sectionTitle: section.title,
+          title: 'Notes for this section',
+          emptyMessage:
+              'No notes for “${section.title}” yet.\n\nAdd a note to capture insights, questions, or TODOs.',
           notes: sectionNotes,
+          locateSectionTitle: (sectionId) => section.title,
           onAdd: () async {
             await showModalBottomSheet<void>(
               context: context,
               isScrollControlled: true,
               showDragHandle: true,
               builder: (context) {
-                return _AddNoteSheet(
+                return _AddOrEditNoteSheet(
+                  title: 'Add note',
                   sectionTitle: section.title,
-                  onSubmit: (body) => _addNote(sectionId: section.id, body: body),
+                  initialBody: '',
+                  initialQuote: '',
+                  showQuoteField: true,
+                  onSubmit: (body, quote) => _addNote(
+                    sectionId: section.id,
+                    body: body,
+                    quote: quote,
+                  ),
+                );
+              },
+            );
+          },
+          onEdit: (note) async {
+            await showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              showDragHandle: true,
+              builder: (context) {
+                return _AddOrEditNoteSheet(
+                  title: 'Edit note',
+                  sectionTitle: section.title,
+                  initialBody: note.body,
+                  initialQuote: note.quote ?? '',
+                  showQuoteField: true,
+                  onSubmit: (body, quote) => _editNote(
+                    noteId: note.id,
+                    body: body,
+                    quote: quote,
+                  ),
                 );
               },
             );
           },
           onDelete: _deleteNote,
         );
+
+        final Widget bookmarksPane = _BookmarksPane(
+          book: book,
+          bookmarkedSectionIds: _settings.bookmarkedSectionIds,
+          onJumpTo: _selectChapterSection,
+        );
+
+        final Widget allNotesPane = _AllNotesPane(
+          book: book,
+          notes: _notes,
+          onJumpToSectionId: (sectionId) {
+            final _SectionLocator? loc = _locateSection(book, sectionId);
+            if (loc == null) return;
+            _selectChapterSection(chapterIndex: loc.chapterIndex, sectionIndex: loc.sectionIndex);
+          },
+          onExport: () async {
+            final String exported = _exportNotesPlainText();
+            await showDialog<void>(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  title: const Text('Export notes'),
+                  content: SizedBox(
+                    width: 560,
+                    child: SingleChildScrollView(
+                      child: SelectableText(
+                        exported.isEmpty ? 'No notes yet.' : exported,
+                      ),
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+
+        final List<Widget> narrowTabs = <Widget>[
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary.withAlpha(18),
+                  theme.scaffoldBackgroundColor,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: readerPane,
+          ),
+          notesPane,
+          bookmarksPane,
+          allNotesPane,
+        ];
 
         return Scaffold(
           appBar: AppBar(
@@ -297,28 +572,15 @@ class _ReaderShellPageState extends State<ReaderShellPage> {
                           child: readerPane,
                         ),
                       ),
-                      VerticalDivider(width: 1, color: theme.dividerColor),
-                      SizedBox(width: 360, child: notesPane),
+                      if (showNotesPane) ...[
+                        VerticalDivider(width: 1, color: theme.dividerColor),
+                        SizedBox(width: 360, child: notesPane),
+                      ],
                     ],
                   )
                 : IndexedStack(
                     index: _bottomTabIndex,
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              theme.colorScheme.primary.withAlpha(18),
-                              theme.scaffoldBackgroundColor,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: readerPane,
-                      ),
-                      notesPane,
-                    ],
+                    children: narrowTabs,
                   ),
           ),
           bottomNavigationBar: wide
@@ -341,6 +603,16 @@ class _ReaderShellPageState extends State<ReaderShellPage> {
                       selectedIcon: Icon(Icons.sticky_note_2),
                       label: 'Notes',
                     ),
+                    NavigationDestination(
+                      icon: Icon(Icons.bookmark_border),
+                      selectedIcon: Icon(Icons.bookmark),
+                      label: 'Bookmarks',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.list_alt_outlined),
+                      selectedIcon: Icon(Icons.list_alt),
+                      label: 'All notes',
+                    ),
                   ],
                 ),
           floatingActionButton: wide
@@ -352,9 +624,17 @@ class _ReaderShellPageState extends State<ReaderShellPage> {
                       isScrollControlled: true,
                       showDragHandle: true,
                       builder: (context) {
-                        return _AddNoteSheet(
+                        return _AddOrEditNoteSheet(
+                          title: 'Add note',
                           sectionTitle: section.title,
-                          onSubmit: (body) => _addNote(sectionId: section.id, body: body),
+                          initialBody: '',
+                          initialQuote: '',
+                          showQuoteField: true,
+                          onSubmit: (body, quote) => _addNote(
+                            sectionId: section.id,
+                            body: body,
+                            quote: quote,
+                          ),
                         );
                       },
                     );
@@ -473,10 +753,14 @@ class _ReaderPane extends StatelessWidget {
     required this.sectionTitle,
     required this.markdown,
     required this.fontScale,
-    required this.onFontScaleChanged,
+    required this.lineHeight,
+    required this.bookmarked,
+    required this.onToggleBookmark,
     required this.onPrev,
     required this.onNext,
     required this.onAddNotePressed,
+    required this.onSearchPressed,
+    required this.onSettingsPressed,
   });
 
   final String bookTitle;
@@ -485,11 +769,16 @@ class _ReaderPane extends StatelessWidget {
   final String markdown;
 
   final double fontScale;
-  final ValueChanged<double> onFontScaleChanged;
+  final double lineHeight;
+
+  final bool bookmarked;
+  final VoidCallback onToggleBookmark;
 
   final VoidCallback onPrev;
   final VoidCallback onNext;
   final VoidCallback onAddNotePressed;
+  final VoidCallback onSearchPressed;
+  final VoidCallback onSettingsPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -509,37 +798,24 @@ class _ReaderPane extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               IconButton(
+                tooltip: 'Search',
+                onPressed: onSearchPressed,
+                icon: const Icon(Icons.search),
+              ),
+              IconButton(
+                tooltip: bookmarked ? 'Remove bookmark' : 'Bookmark section',
+                onPressed: onToggleBookmark,
+                icon: Icon(bookmarked ? Icons.bookmark : Icons.bookmark_border),
+              ),
+              IconButton(
                 tooltip: 'Add note',
                 onPressed: onAddNotePressed,
                 icon: const Icon(Icons.add_comment),
               ),
-              PopupMenuButton<double>(
-                tooltip: 'Text size',
-                onSelected: onFontScaleChanged,
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 0.9, child: Text('Small')),
-                  PopupMenuItem(value: 1.0, child: Text('Default')),
-                  PopupMenuItem(value: 1.1, child: Text('Large')),
-                  PopupMenuItem(value: 1.2, child: Text('Extra large')),
-                ],
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  child: Row(
-                    children: [
-                      Icon(Icons.text_fields, color: theme.colorScheme.primary),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${(fontScale * 100).round()}%',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.arrow_drop_down),
-                    ],
-                  ),
-                ),
+              IconButton(
+                tooltip: 'Settings',
+                onPressed: onSettingsPressed,
+                icon: const Icon(Icons.tune),
               ),
             ],
           ),
@@ -555,7 +831,7 @@ class _ReaderPane extends StatelessWidget {
                 styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
                   p: theme.textTheme.bodyLarge?.copyWith(
                     fontSize: (theme.textTheme.bodyLarge?.fontSize ?? 16) * fontScale,
-                    height: 1.6,
+                    height: lineHeight,
                   ),
                   h1: theme.textTheme.titleLarge?.copyWith(
                     fontSize: 24 * fontScale,
@@ -641,15 +917,24 @@ class _ReaderHeader extends StatelessWidget {
 
 class _NotesPane extends StatelessWidget {
   const _NotesPane({
-    required this.sectionTitle,
+    required this.title,
+    required this.emptyMessage,
     required this.notes,
+    required this.locateSectionTitle,
     required this.onAdd,
+    required this.onEdit,
     required this.onDelete,
   });
 
-  final String sectionTitle;
+  final String title;
+  final String emptyMessage;
   final List<Note> notes;
+
+  /// Used by All-notes experiences; here kept for consistency.
+  final String Function(String sectionId) locateSectionTitle;
+
   final VoidCallback onAdd;
+  final ValueChanged<Note> onEdit;
   final ValueChanged<String> onDelete;
 
   @override
@@ -664,7 +949,7 @@ class _NotesPane extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Notes',
+                  title,
                   style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                 ),
               ),
@@ -684,7 +969,7 @@ class _NotesPane extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Text(
-                        'No notes for “$sectionTitle” yet.\n\nAdd a note to capture insights, questions, or TODOs.',
+                        emptyMessage,
                         style: theme.textTheme.bodyLarge,
                       ),
                     ),
@@ -696,8 +981,7 @@ class _NotesPane extends StatelessWidget {
                   separatorBuilder: (_, __) => Divider(color: theme.dividerColor),
                   itemBuilder: (context, i) {
                     final Note n = notes[i];
-                    final DateTime dt =
-                        DateTime.fromMillisecondsSinceEpoch(n.createdAtEpochMs);
+                    final DateTime dt = DateTime.fromMillisecondsSinceEpoch(n.createdAtEpochMs);
 
                     return Card(
                       child: Padding(
@@ -707,18 +991,25 @@ class _NotesPane extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.sticky_note_2,
-                                    color: theme.colorScheme.secondary),
+                                Icon(Icons.sticky_note_2, color: theme.colorScheme.secondary),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
-                                    '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}',
+                                    '${dt.year.toString().padLeft(4, '0')}-'
+                                    '${dt.month.toString().padLeft(2, '0')}-'
+                                    '${dt.day.toString().padLeft(2, '0')} '
+                                    '${dt.hour.toString().padLeft(2, '0')}:'
+                                    '${dt.minute.toString().padLeft(2, '0')}',
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       fontWeight: FontWeight.w700,
                                       color: theme.colorScheme.onSurface.withAlpha(160),
                                     ),
                                   ),
+                                ),
+                                IconButton(
+                                  tooltip: 'Edit note',
+                                  onPressed: () => onEdit(n),
+                                  icon: const Icon(Icons.edit_outlined),
                                 ),
                                 IconButton(
                                   tooltip: 'Delete note',
@@ -761,31 +1052,45 @@ class _NotesPane extends StatelessWidget {
   }
 }
 
-class _AddNoteSheet extends StatefulWidget {
-  const _AddNoteSheet({
+class _AddOrEditNoteSheet extends StatefulWidget {
+  const _AddOrEditNoteSheet({
+    required this.title,
     required this.sectionTitle,
+    required this.initialBody,
+    required this.initialQuote,
+    required this.showQuoteField,
     required this.onSubmit,
   });
 
+  final String title;
   final String sectionTitle;
-  final ValueChanged<String> onSubmit;
+  final String initialBody;
+  final String initialQuote;
+  final bool showQuoteField;
+
+  final void Function(String body, String quote) onSubmit;
 
   @override
-  State<_AddNoteSheet> createState() => _AddNoteSheetState();
+  State<_AddOrEditNoteSheet> createState() => _AddOrEditNoteSheetState();
 }
 
-class _AddNoteSheetState extends State<_AddNoteSheet> {
-  final TextEditingController _controller = TextEditingController();
+class _AddOrEditNoteSheetState extends State<_AddOrEditNoteSheet> {
+  late final TextEditingController _bodyController = TextEditingController(text: widget.initialBody);
+  late final TextEditingController _quoteController =
+      TextEditingController(text: widget.initialQuote);
+
   bool _submitting = false;
 
   @override
   void dispose() {
-    _controller.dispose();
+    _bodyController.dispose();
+    _quoteController.dispose();
     super.dispose();
   }
 
   void _submit() {
-    final String body = _controller.text.trim();
+    final String body = _bodyController.text.trim();
+    final String quote = _quoteController.text.trim();
     if (body.isEmpty) return;
 
     setState(() {
@@ -793,7 +1098,7 @@ class _AddNoteSheetState extends State<_AddNoteSheet> {
     });
 
     // Synchronous UI operations only; no await.
-    widget.onSubmit(body);
+    widget.onSubmit(body, quote);
     Navigator.of(context).pop();
   }
 
@@ -813,7 +1118,7 @@ class _AddNoteSheetState extends State<_AddNoteSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Add note',
+            widget.title,
             style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
@@ -825,8 +1130,21 @@ class _AddNoteSheetState extends State<_AddNoteSheet> {
             ),
           ),
           const SizedBox(height: 12),
+          if (widget.showQuoteField) ...[
+            TextField(
+              controller: _quoteController,
+              minLines: 1,
+              maxLines: 3,
+              textInputAction: TextInputAction.newline,
+              decoration: const InputDecoration(
+                hintText: 'Optional quote (paste a snippet)…',
+                prefixIcon: Icon(Icons.format_quote),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
           TextField(
-            controller: _controller,
+            controller: _bodyController,
             minLines: 4,
             maxLines: 10,
             textInputAction: TextInputAction.newline,
@@ -857,4 +1175,323 @@ class _AddNoteSheetState extends State<_AddNoteSheet> {
       ),
     );
   }
+}
+
+class _SearchSheet extends StatefulWidget {
+  const _SearchSheet({
+    required this.onSearch,
+    required this.onJumpTo,
+  });
+
+  final List<SearchResult> Function(String query) onSearch;
+  final void Function(int chapterIndex, int sectionIndex) onJumpTo;
+
+  @override
+  State<_SearchSheet> createState() => _SearchSheetState();
+}
+
+class _SearchSheetState extends State<_SearchSheet> {
+  final TextEditingController _controller = TextEditingController();
+  List<SearchResult> _results = const <SearchResult>[];
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _runSearch(String q) {
+    setState(() {
+      _results = widget.onSearch(q);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 6,
+        bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            onChanged: _runSearch,
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.search),
+              hintText: 'Search chapters and content…',
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 420,
+            child: _results.isEmpty
+                ? Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'Type to search the book.\n\nTip: Try “guardrails”, “notes”, or “loop”.',
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: _results.length,
+                    separatorBuilder: (_, __) => Divider(color: theme.dividerColor),
+                    itemBuilder: (context, i) {
+                      final SearchResult r = _results[i];
+                      return ListTile(
+                        leading: Icon(Icons.find_in_page, color: theme.colorScheme.primary),
+                        title: Text('${r.chapter.title} • ${r.section.title}'),
+                        subtitle: Text(
+                          r.matchContext,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () {
+                          widget.onJumpTo(r.chapterIndex, r.sectionIndex);
+                          Navigator.of(context).pop();
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BookmarksPane extends StatelessWidget {
+  const _BookmarksPane({
+    required this.book,
+    required this.bookmarkedSectionIds,
+    required this.onJumpTo,
+  });
+
+  final Book book;
+  final List<String> bookmarkedSectionIds;
+
+  final void Function({required int chapterIndex, required int sectionIndex}) onJumpTo;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    final List<_SectionLocator> items = <_SectionLocator>[
+      for (final id in bookmarkedSectionIds)
+        if (_locateSection(book, id) != null) _locateSection(book, id)!,
+    ];
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Bookmarks',
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: items.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'No bookmarks yet.\n\nTap the bookmark icon in the reader to save a section.',
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => Divider(color: theme.dividerColor),
+                  itemBuilder: (context, i) {
+                    final _SectionLocator loc = items[i];
+                    return Card(
+                      child: ListTile(
+                        leading: Icon(Icons.bookmark, color: theme.colorScheme.secondary),
+                        title: Text(loc.section.title),
+                        subtitle: Text(loc.chapter.title),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => onJumpTo(
+                          chapterIndex: loc.chapterIndex,
+                          sectionIndex: loc.sectionIndex,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AllNotesPane extends StatefulWidget {
+  const _AllNotesPane({
+    required this.book,
+    required this.notes,
+    required this.onJumpToSectionId,
+    required this.onExport,
+  });
+
+  final Book book;
+  final List<Note> notes;
+
+  final ValueChanged<String> onJumpToSectionId;
+  final VoidCallback onExport;
+
+  @override
+  State<_AllNotesPane> createState() => _AllNotesPaneState();
+}
+
+class _AllNotesPaneState extends State<_AllNotesPane> {
+  String _filter = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String q = _filter.trim().toLowerCase();
+
+    final List<Note> sorted = widget.notes.toList(growable: false)
+      ..sort((a, b) => b.createdAtEpochMs.compareTo(a.createdAtEpochMs));
+
+    final List<Note> filtered = q.isEmpty
+        ? sorted
+        : sorted
+            .where(
+              (n) =>
+                  n.body.toLowerCase().contains(q) ||
+                  (n.quote?.toLowerCase().contains(q) ?? false),
+            )
+            .toList(growable: false);
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'All notes',
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Export',
+                onPressed: widget.onExport,
+                icon: const Icon(Icons.ios_share),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+          child: TextField(
+            onChanged: (v) => setState(() => _filter = v),
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.filter_list),
+              hintText: 'Filter notes…',
+            ),
+          ),
+        ),
+        Expanded(
+          child: filtered.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        widget.notes.isEmpty
+                            ? 'No notes yet.\n\nAdd notes while reading to build your personal index.'
+                            : 'No results for “$_filter”.',
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, __) => Divider(color: theme.dividerColor),
+                  itemBuilder: (context, i) {
+                    final Note n = filtered[i];
+                    final _SectionLocator? loc = _locateSection(widget.book, n.sectionId);
+                    final String sectionLabel = loc == null
+                        ? '(Unknown section)'
+                        : '${loc.chapter.title} • ${loc.section.title}';
+
+                    return Card(
+                      child: ListTile(
+                        leading: Icon(Icons.sticky_note_2, color: theme.colorScheme.secondary),
+                        title: Text(sectionLabel),
+                        subtitle: Text(
+                          n.quote != null && n.quote!.trim().isNotEmpty
+                              ? '“${n.quote}”\n${n.body}'
+                              : n.body,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () {
+                          widget.onJumpToSectionId(n.sectionId);
+                        },
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionLocator {
+  const _SectionLocator({
+    required this.chapterIndex,
+    required this.sectionIndex,
+    required this.chapter,
+    required this.section,
+  });
+
+  final int chapterIndex;
+  final int sectionIndex;
+  final Chapter chapter;
+  final Section section;
+}
+
+_SectionLocator? _locateSection(Book book, String sectionId) {
+  for (final (cIdx, ch) in book.chapters.indexed) {
+    for (final (sIdx, sec) in ch.sections.indexed) {
+      if (sec.id == sectionId) {
+        return _SectionLocator(
+          chapterIndex: cIdx,
+          sectionIndex: sIdx,
+          chapter: ch,
+          section: sec,
+        );
+      }
+    }
+  }
+  return null;
 }

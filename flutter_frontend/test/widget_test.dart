@@ -8,7 +8,7 @@ Future<void> _pumpApp(WidgetTester tester) async {
   // SharedPreferences is used during app bootstrap (LocalPersistenceService).
   // In widget tests, we must provide a mock store or the plugin init path can
   // hang/fail and the UI stays stuck on the loading spinner.
-  SharedPreferences.setMockInitialValues(<String, Object?>{});
+  SharedPreferences.setMockInitialValues(<String, Object>{});
   await tester.pumpWidget(const VibeCodingCompanionApp());
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 200));

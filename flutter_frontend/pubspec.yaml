@@ -1,0 +1,28 @@
+name: vibe_coding_companion
+description: An engaging interactive book app about vibe coding, built with Flutter.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Persistence for engagement features (streaks, achievements, bookmarks, etc.)
+  shared_preferences: ^2.2.3
+
+  # Human-friendly relative times for activity feed / last read labels
+  timeago: ^3.6.1
+
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.2
+
+flutter:
+  uses-material-design: true
+  assets: []

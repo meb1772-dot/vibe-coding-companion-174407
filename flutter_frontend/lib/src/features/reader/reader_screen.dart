@@ -8,8 +8,10 @@ import 'package:vibe_coding_companion/src/engagement/engagement_models.dart';
 import 'package:vibe_coding_companion/src/engagement/engagement_service.dart';
 import 'package:vibe_coding_companion/src/features/engagement/engagement_widgets.dart';
 import 'package:vibe_coding_companion/src/features/reader/block_widgets.dart';
+import 'package:vibe_coding_companion/src/features/reader/reader_engagement_persistence.dart';
 import 'package:vibe_coding_companion/src/features/reader/reader_persistence.dart';
 import 'package:vibe_coding_companion/src/features/reader/reader_state.dart';
+import 'package:vibe_coding_companion/src/features/reader/takeaway_widgets.dart';
 
 class ReaderScreen extends StatefulWidget {
   const ReaderScreen({super.key});
@@ -37,6 +39,19 @@ class _ReaderScreenState extends State<ReaderScreen> {
   final DailyChallenge _challenge = EngagementService.todaysChallenge();
   bool _challengeCompleted = false;
 
+  // “Addictive” loop 1: XP + Level
+  ReaderXp _xp = const ReaderXp(xp: 0);
+
+  // “Addictive” loop 2: Focus sprints
+  SprintHistory _sprintHistory =
+      const SprintHistory(bestStreak: 0, events: <SprintEvent>[]);
+  Timer? _sprintTimer;
+  int _sprintRemainingSec = 0;
+  int _sprintStreak = 0; // consecutive completions in-session
+
+  // “Addictive” loop 3: Takeaways
+  List<Takeaway> _takeaways = const <Takeaway>[];
+
   bool _ready = false;
 
   Timer? _readingTimer;
@@ -52,6 +67,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
   @override
   void dispose() {
     _readingTimer?.cancel();
+    _sprintTimer?.cancel();
     super.dispose();
   }
 
@@ -60,6 +76,12 @@ class _ReaderScreenState extends State<ReaderScreen> {
         await ReaderPersistence.load();
     final (ReadingStats stats, ReadingGoal goal, List<Achievement> achievements) =
         await EngagementService.load();
+
+    final ReaderXp xp = await ReaderEngagementPersistence.loadXp();
+    final List<Takeaway> takeaways =
+        await ReaderEngagementPersistence.loadTakeaways();
+    final SprintHistory history =
+        await ReaderEngagementPersistence.loadSprintHistory();
 
     // No context usage after await: only update primitives/state.
     setState(() {
@@ -70,6 +92,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
       _stats = stats;
       _goal = goal;
       _achievements = achievements;
+      _xp = xp;
+      _takeaways = takeaways;
+      _sprintHistory = history;
       _ready = true;
     });
   }
@@ -129,6 +154,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
       setState(() {
         _achievements = updated;
       });
+
+      await _awardXp(3, reason: 'Bookmark');
     }
   }
 
@@ -159,6 +186,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
       setState(() {
         _achievements = updatedAch;
       });
+
+      await _awardXp(2, reason: 'Highlight');
     }
   }
 
@@ -179,6 +208,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
       setState(() {
         _achievements = updated;
       });
+
+      await _awardXp(8, reason: 'Quiz win');
+    } else {
+      await _awardXp(1, reason: 'Quiz attempt');
     }
   }
 
@@ -195,6 +228,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
     setState(() {
       _achievements = updated;
     });
+
+    await _awardXp(10, reason: 'Daily challenge');
   }
 
   Future<void> _recordEngagementTick({required int minutes}) async {
@@ -223,6 +258,18 @@ class _ReaderScreenState extends State<ReaderScreen> {
       _goal = updatedGoal;
       _achievements = updatedAchievements;
     });
+
+    await _awardXp((minutes * 2).clamp(1, 50), reason: 'Reading');
+  }
+
+  // PUBLIC_INTERFACE
+  Future<void> _awardXp(int delta, {required String reason}) async {
+    /// Awards XP and persists it. (Local-only “progress bar” hook)
+    final ReaderXp updated = _xp.add(delta);
+    setState(() {
+      _xp = updated;
+    });
+    await ReaderEngagementPersistence.saveXp(updated);
   }
 
   void _nextSection() {
@@ -253,9 +300,146 @@ class _ReaderScreenState extends State<ReaderScreen> {
     if (c - 1 >= 0) {
       final BookChapter prev = BookContent.chapters[c - 1];
       setState(() {
-        _state = _state.copyWith(chapterIndex: c - 1, sectionIndex: prev.sections.length - 1);
+        _state = _state.copyWith(
+          chapterIndex: c - 1,
+          sectionIndex: prev.sections.length - 1,
+        );
       });
     }
+  }
+
+  void _startSprint(int minutes) {
+    _sprintTimer?.cancel();
+    setState(() {
+      _sprintRemainingSec = minutes * 60;
+    });
+
+    _sprintTimer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
+      if (_sprintRemainingSec <= 1) {
+        t.cancel();
+        _finishSprint(minutes: minutes, completed: true);
+        return;
+      }
+      setState(() {
+        _sprintRemainingSec -= 1;
+      });
+    });
+  }
+
+  Future<void> _cancelSprint() async {
+    if (_sprintRemainingSec <= 0) return;
+
+    _sprintTimer?.cancel();
+    final int minutes = (_sprintRemainingSec / 60).ceil().clamp(1, 60);
+    setState(() {
+      _sprintRemainingSec = 0;
+      _sprintStreak = 0;
+    });
+
+    await _finishSprint(minutes: minutes, completed: false);
+  }
+
+  Future<void> _finishSprint({required int minutes, required bool completed}) async {
+    // This is a local “mini-game”: short timer + reward.
+    final int xpAwarded = completed ? (minutes * 6).clamp(6, 60) : 1;
+
+    if (completed) {
+      setState(() {
+        _sprintRemainingSec = 0;
+        _sprintStreak += 1;
+      });
+    }
+
+    final int best = completed
+        ? (_sprintHistory.bestStreak < _sprintStreak
+            ? _sprintStreak
+            : _sprintHistory.bestStreak)
+        : _sprintHistory.bestStreak;
+
+    final SprintEvent event = SprintEvent(
+      createdAtMsUtc: DateTime.now().toUtc().millisecondsSinceEpoch,
+      minutes: minutes,
+      xpAwarded: xpAwarded,
+      completed: completed,
+    );
+
+    final List<SprintEvent> updatedEvents = <SprintEvent>[
+      event,
+      ..._sprintHistory.events,
+    ].take(20).toList(growable: false);
+
+    final SprintHistory updatedHistory =
+        SprintHistory(bestStreak: best, events: updatedEvents);
+
+    setState(() {
+      _sprintHistory = updatedHistory;
+    });
+
+    await ReaderEngagementPersistence.saveSprintHistory(updatedHistory);
+    await _awardXp(xpAwarded, reason: 'Sprint');
+
+    if (completed) {
+      // also feed the existing goal/streak system
+      await _recordEngagementTick(minutes: minutes);
+    }
+  }
+
+  void _openTakeawayComposer(BuildContext context, BookBlock block) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (BuildContext sheetContext) {
+        return TakeawayComposer(
+          defaultTitle: (block.title ?? '').isNotEmpty ? block.title! : 'Key takeaway',
+          prompt: 'What should future-you remember from this section?',
+          onSubmit: ((String title, String note) payload) {
+            _saveTakeawayFromBlock(block: block, title: payload.$1, note: payload.$2);
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _saveTakeawayFromBlock({
+    required BookBlock block,
+    required String title,
+    required String note,
+  }) async {
+    final String t = title.trim().isEmpty ? 'Key takeaway' : title.trim();
+    final String n = note.trim();
+    if (n.isEmpty) return;
+
+    final String id = 'tw_${DateTime.now().toUtc().millisecondsSinceEpoch}_${block.id}';
+    final Takeaway takeaway = Takeaway(
+      id: id,
+      createdDayKeyUtc: EngagementService.todayKeyUtc(),
+      chapterId: _chapter.id,
+      sectionId: _section.id,
+      blockId: block.id,
+      title: t,
+      note: n,
+    );
+
+    final List<Takeaway> updated = <Takeaway>[takeaway, ..._takeaways]
+        .take(100)
+        .toList(growable: false);
+
+    setState(() {
+      _takeaways = updated;
+    });
+
+    await ReaderEngagementPersistence.saveTakeaways(updated);
+    await _awardXp(6, reason: 'Takeaway');
+  }
+
+  Future<void> _deleteTakeaway(String id) async {
+    final List<Takeaway> updated =
+        _takeaways.where((Takeaway t) => t.id != id).toList(growable: false);
+    setState(() {
+      _takeaways = updated;
+    });
+    await ReaderEngagementPersistence.saveTakeaways(updated);
   }
 
   @override
@@ -273,20 +457,22 @@ class _ReaderScreenState extends State<ReaderScreen> {
                   // Left: chapters
                   SizedBox(
                     width: wide ? 280 : 0,
-                    child: wide ? _ChaptersPane(
-                      chapterIndex: _state.chapterIndex,
-                      sectionIndex: _state.sectionIndex,
-                      onSelectChapter: (int idx) {
-                        setState(() {
-                          _state = _state.copyWith(chapterIndex: idx, sectionIndex: 0);
-                        });
-                      },
-                      onSelectSection: (int idx) {
-                        setState(() {
-                          _state = _state.copyWith(sectionIndex: idx);
-                        });
-                      },
-                    ) : const SizedBox.shrink(),
+                    child: wide
+                        ? _ChaptersPane(
+                            chapterIndex: _state.chapterIndex,
+                            sectionIndex: _state.sectionIndex,
+                            onSelectChapter: (int idx) {
+                              setState(() {
+                                _state = _state.copyWith(chapterIndex: idx, sectionIndex: 0);
+                              });
+                            },
+                            onSelectSection: (int idx) {
+                              setState(() {
+                                _state = _state.copyWith(sectionIndex: idx);
+                              });
+                            },
+                          )
+                        : const SizedBox.shrink(),
                   ),
 
                   // Center: reader
@@ -300,17 +486,25 @@ class _ReaderScreenState extends State<ReaderScreen> {
                       challengeCompleted: _challengeCompleted,
                       stats: _stats,
                       goal: _goal,
+                      xp: _xp,
+                      sprintRemainingSec: _sprintRemainingSec,
+                      sprintBestStreak: _sprintHistory.bestStreak,
+                      sprintStreak: _sprintStreak,
+                      takeawaysCount: _takeaways.length,
                       onCompleteChallenge: _completeDailyChallenge,
                       onToggleBookmark: (String blockId) => _toggleBookmark(blockId),
                       onCycleHighlight: (String blockId) => _cycleHighlight(blockId),
                       onAnswerQuiz: (String blockId, int selected, int? correct) =>
                           _answerQuiz(blockId, selected, correct),
+                      onStartSprint: _startSprint,
+                      onCancelSprint: _cancelSprint,
+                      onOpenTakeaway: _openTakeawayComposer,
                     ),
                   ),
 
                   // Right: notes/engagement
                   SizedBox(
-                    width: wide ? 320 : 0,
+                    width: wide ? 340 : 0,
                     child: wide
                         ? _RightPane(
                             scheme: scheme,
@@ -318,10 +512,13 @@ class _ReaderScreenState extends State<ReaderScreen> {
                             goal: _goal,
                             achievements: _achievements,
                             activeMinutes: _activeMinutesCounter,
+                            xp: _xp,
+                            sprintHistory: _sprintHistory,
+                            takeaways: _takeaways,
                             onLogMinutes: () {
-                              // record a tiny session tick to feed streak/goals
                               _recordEngagementTick(minutes: 2);
                             },
+                            onStartSprint5: () => _startSprint(5),
                             onSetGoal: () async {
                               await EngagementService.setDailyGoalMinutes(18);
                               final (ReadingStats stats, ReadingGoal goal, List<Achievement> a) =
@@ -332,6 +529,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                                 _achievements = a;
                               });
                             },
+                            onDeleteTakeaway: _deleteTakeaway,
                           )
                         : const SizedBox.shrink(),
                   ),
@@ -375,19 +573,19 @@ class _ReaderScreenState extends State<ReaderScreen> {
       ),
       body: body,
       bottomNavigationBar: _QuickActionsBar(
+        sprintRemainingSec: _sprintRemainingSec,
         onBookmarkSection: () {
-          // addictive: "save this section" by bookmarking first block
           final String firstBlockId = _section.blocks.first.id;
           _toggleBookmark(firstBlockId);
         },
         onTwoMinuteSprint: () {
-          // logs 2 minutes; acts as a "micro-session" button
           _recordEngagementTick(minutes: 2);
         },
         onGoalBoost: () {
-          // quick goal bump
           EngagementService.setDailyGoalMinutes((_goal.minutesPerDay + 5).clamp(5, 120));
         },
+        onStartFocusSprint: () => _startSprint(5),
+        onCancelFocusSprint: _cancelSprint,
       ),
     );
   }
@@ -504,10 +702,23 @@ class _ReaderPane extends StatelessWidget {
   final ReadingStats stats;
   final ReadingGoal goal;
 
+  final ReaderXp xp;
+
+  final int sprintRemainingSec;
+  final int sprintBestStreak;
+  final int sprintStreak;
+
+  final int takeawaysCount;
+
   final VoidCallback onCompleteChallenge;
   final void Function(String blockId) onToggleBookmark;
   final void Function(String blockId) onCycleHighlight;
   final void Function(String blockId, int selected, int? correct) onAnswerQuiz;
+
+  final ValueChanged<int> onStartSprint;
+  final VoidCallback onCancelSprint;
+
+  final void Function(BuildContext context, BookBlock block) onOpenTakeaway;
 
   const _ReaderPane({
     required this.chapter,
@@ -518,28 +729,182 @@ class _ReaderPane extends StatelessWidget {
     required this.challengeCompleted,
     required this.stats,
     required this.goal,
+    required this.xp,
+    required this.sprintRemainingSec,
+    required this.sprintBestStreak,
+    required this.sprintStreak,
+    required this.takeawaysCount,
     required this.onCompleteChallenge,
     required this.onToggleBookmark,
     required this.onCycleHighlight,
     required this.onAnswerQuiz,
+    required this.onStartSprint,
+    required this.onCancelSprint,
+    required this.onOpenTakeaway,
   });
+
+  String _fmtTime(int sec) {
+    final int m = sec ~/ 60;
+    final int s = sec % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
+    final double levelProgress = xp.xpNeededForNextLevel() <= 0
+        ? 0
+        : (xp.xpIntoLevel() / xp.xpNeededForNextLevel()).clamp(0.0, 1.0);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: <Widget>[
         Text(chapter.subtitle, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 6),
-        Text(
-          section.title,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+        Text(section.title, style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 14),
 
+        // Progress hooks at the top (fast feedback)
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Icon(Icons.auto_graph, color: scheme.primary),
+                    const SizedBox(width: 8),
+                    Text('Momentum', style: Theme.of(context).textTheme.titleMedium),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: scheme.primary.withAlpha(14),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: scheme.primary.withAlpha(30)),
+                      ),
+                      child: Text(
+                        'Lv ${xp.level} • ${xp.xp} XP',
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: scheme.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    minHeight: 10,
+                    value: levelProgress,
+                    backgroundColor: scheme.primary.withAlpha(30),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Next level: ${xp.xpIntoLevel()}/${xp.xpNeededForNextLevel()} XP • Takeaways saved: $takeawaysCount',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
         StreakGoalHeader(stats: stats, goal: goal),
+        const SizedBox(height: 12),
+
+        // Focus sprint mini-game
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Icon(Icons.timer, color: scheme.secondary),
+                    const SizedBox(width: 8),
+                    Text('Focus sprint', style: Theme.of(context).textTheme.titleMedium),
+                    const Spacer(),
+                    if (sprintBestStreak > 0)
+                      Text(
+                        'Best: $sprintBestStreak',
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: scheme.onSurface.withAlpha(170),
+                            ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                if (sprintRemainingSec > 0) ...<Widget>[
+                  Row(
+                    children: <Widget>[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: scheme.secondary.withAlpha(14),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: scheme.secondary.withAlpha(30)),
+                        ),
+                        child: Text(
+                          _fmtTime(sprintRemainingSec),
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                color: scheme.secondary,
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      if (sprintStreak > 0)
+                        Text('Streak: $sprintStreak',
+                            style: Theme.of(context).textTheme.labelLarge),
+                      const Spacer(),
+                      OutlinedButton.icon(
+                        onPressed: onCancelSprint,
+                        icon: const Icon(Icons.stop),
+                        label: const Text('Stop'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Don’t multitask. Read one section and save one takeaway.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ] else ...<Widget>[
+                  Text(
+                    'Start a short timer to create urgency + reward.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () => onStartSprint(5),
+                          icon: const Icon(Icons.play_arrow),
+                          label: const Text('Start 5 min'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => onStartSprint(10),
+                          icon: const Icon(Icons.play_circle_outline),
+                          label: const Text('Start 10'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
         const SizedBox(height: 12),
 
         DailyChallengeCard(
@@ -595,7 +960,10 @@ class _ReaderPane extends StatelessWidget {
               inner = CalloutBlock(title: b.title ?? 'Note', text: b.text ?? '');
               break;
             case BookBlockType.checklist:
-              inner = ChecklistBlock(title: b.title ?? 'Checklist', items: b.items ?? <String>[]);
+              inner = ChecklistBlock(
+                title: b.title ?? 'Checklist',
+                items: b.items ?? <String>[],
+              );
               break;
             case BookBlockType.prompt:
               inner = PromptBlock(title: b.title ?? 'Prompt', text: b.text ?? '');
@@ -618,12 +986,27 @@ class _ReaderPane extends StatelessWidget {
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: BlockCard(
-              highlightColor: highlight,
-              bookmarked: bookmarked,
-              onToggleBookmark: () => onToggleBookmark(b.id),
-              onCycleHighlight: () => onCycleHighlight(b.id),
-              child: inner,
+            child: Column(
+              children: <Widget>[
+                BlockCard(
+                  highlightColor: highlight,
+                  bookmarked: bookmarked,
+                  onToggleBookmark: () => onToggleBookmark(b.id),
+                  onCycleHighlight: () => onCycleHighlight(b.id),
+                  child: inner,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: <Widget>[
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: () => onOpenTakeaway(context, b),
+                      icon: const Icon(Icons.bookmark_add_outlined),
+                      label: const Text('Save takeaway'),
+                    ),
+                  ],
+                ),
+              ],
             ),
           );
         }),
@@ -638,8 +1021,14 @@ class _RightPane extends StatelessWidget {
   final ReadingGoal goal;
   final List<Achievement> achievements;
   final int activeMinutes;
+  final ReaderXp xp;
+  final SprintHistory sprintHistory;
+  final List<Takeaway> takeaways;
+
   final VoidCallback onLogMinutes;
+  final VoidCallback onStartSprint5;
   final VoidCallback onSetGoal;
+  final ValueChanged<String> onDeleteTakeaway;
 
   const _RightPane({
     required this.scheme,
@@ -647,8 +1036,13 @@ class _RightPane extends StatelessWidget {
     required this.goal,
     required this.achievements,
     required this.activeMinutes,
+    required this.xp,
+    required this.sprintHistory,
+    required this.takeaways,
     required this.onLogMinutes,
+    required this.onStartSprint5,
     required this.onSetGoal,
+    required this.onDeleteTakeaway,
   });
 
   @override
@@ -662,6 +1056,9 @@ class _RightPane extends StatelessWidget {
             ),
             allowFromNow: true,
           );
+
+    final List<Takeaway> recent = takeaways.take(8).toList(growable: false);
+    final List<SprintEvent> sprints = sprintHistory.events.take(6).toList(growable: false);
 
     return Material(
       color: scheme.surface,
@@ -687,6 +1084,8 @@ class _RightPane extends StatelessWidget {
                   Text('Active minutes (this screen): $activeMinutes'),
                   const SizedBox(height: 6),
                   Text('Last read: $lastReadLabel'),
+                  const SizedBox(height: 6),
+                  Text('Level: ${xp.level} • XP: ${xp.xp}'),
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
@@ -694,6 +1093,15 @@ class _RightPane extends StatelessWidget {
                       onPressed: onLogMinutes,
                       icon: const Icon(Icons.flash_on),
                       label: const Text('Log a 2-minute sprint'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: onStartSprint5,
+                      icon: const Icon(Icons.timer),
+                      label: const Text('Start a 5-min focus sprint'),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -710,6 +1118,148 @@ class _RightPane extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
+
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Icon(Icons.bookmarks, color: scheme.secondary),
+                      const SizedBox(width: 8),
+                      Text('Key takeaways', style: Theme.of(context).textTheme.titleMedium),
+                      const Spacer(),
+                      Text(
+                        '${takeaways.length}',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: scheme.onSurface.withAlpha(160),
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  if (recent.isEmpty)
+                    Text(
+                      'Save 1 takeaway per section. This builds a “return later” loop.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    )
+                  else
+                    ...recent.map((Takeaway t) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: scheme.primary.withAlpha(8),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: scheme.primary.withAlpha(20)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Row(
+                                children: <Widget>[
+                                  Expanded(
+                                    child: Text(
+                                      t.title,
+                                      style: Theme.of(context).textTheme.titleSmall,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Delete takeaway',
+                                    onPressed: () => onDeleteTakeaway(t.id),
+                                    icon: const Icon(Icons.delete_outline),
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                t.note,
+                                maxLines: 4,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '${t.createdDayKeyUtc} • ${t.chapterId} • ${t.sectionId}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Icon(Icons.bolt, color: scheme.primary),
+                      const SizedBox(width: 8),
+                      Text('Sprint history', style: Theme.of(context).textTheme.titleMedium),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  if (sprints.isEmpty)
+                    Text(
+                      'Start a focus sprint to create urgency + reward.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    )
+                  else
+                    ...sprints.map((SprintEvent e) {
+                      final DateTime dt = DateTime.fromMillisecondsSinceEpoch(
+                        e.createdAtMsUtc,
+                        isUtc: true,
+                      );
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Icon(
+                              e.completed ? Icons.check_circle : Icons.radio_button_unchecked,
+                              size: 18,
+                              color: e.completed ? scheme.secondary : scheme.onSurface.withAlpha(120),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    '${e.minutes} min • +${e.xpAwarded} XP',
+                                    style: Theme.of(context).textTheme.titleSmall,
+                                  ),
+                                  Text(' ${timeago.format(dt)}'),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Best streak: ${sprintHistory.bestStreak}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
           Card(
             child: Padding(
               padding: const EdgeInsets.all(14),
@@ -725,11 +1275,11 @@ class _RightPane extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   const Text(
-                    'Streaks + micro-sprints + daily challenge create a loop:\n'
-                    '1) Small action\n'
-                    '2) Immediate progress signal\n'
-                    '3) Next tiny step\n\n'
-                    'Use the bottom bar when you feel stuck.',
+                    'Hooks in this app are intentionally lightweight:\n'
+                    '• Focus sprints create urgency + a finish line\n'
+                    '• XP makes progress visible immediately\n'
+                    '• Takeaways create future value (you come back)\n\n'
+                    'Rule: 1 section → 1 takeaway → done.',
                   ),
                 ],
               ),
@@ -752,7 +1302,8 @@ class _RightPane extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     ...achievements.map((Achievement a) {
-                      final DateTime dt = DateTime.fromMillisecondsSinceEpoch(a.unlockedAtMs, isUtc: true);
+                      final DateTime dt = DateTime.fromMillisecondsSinceEpoch(a.unlockedAtMs,
+                          isUtc: true);
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: Row(
@@ -788,14 +1339,20 @@ class _RightPane extends StatelessWidget {
 }
 
 class _QuickActionsBar extends StatelessWidget {
+  final int sprintRemainingSec;
   final VoidCallback onBookmarkSection;
   final VoidCallback onTwoMinuteSprint;
   final VoidCallback onGoalBoost;
+  final VoidCallback onStartFocusSprint;
+  final VoidCallback onCancelFocusSprint;
 
   const _QuickActionsBar({
+    required this.sprintRemainingSec,
     required this.onBookmarkSection,
     required this.onTwoMinuteSprint,
     required this.onGoalBoost,
+    required this.onStartFocusSprint,
+    required this.onCancelFocusSprint,
   });
 
   @override
@@ -816,7 +1373,7 @@ class _QuickActionsBar extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: onTwoMinuteSprint,
                 icon: const Icon(Icons.flash_on),
-                label: const Text('2-min sprint'),
+                label: const Text('2-min'),
               ),
             ),
             const SizedBox(width: 10),
@@ -833,6 +1390,19 @@ class _QuickActionsBar extends StatelessWidget {
               onPressed: onGoalBoost,
               icon: Icon(Icons.add_circle, color: scheme.secondary),
             ),
+            const SizedBox(width: 4),
+            if (sprintRemainingSec <= 0)
+              IconButton(
+                tooltip: 'Start focus sprint (5 min)',
+                onPressed: onStartFocusSprint,
+                icon: Icon(Icons.timer, color: scheme.primary),
+              )
+            else
+              IconButton(
+                tooltip: 'Stop focus sprint',
+                onPressed: onCancelFocusSprint,
+                icon: Icon(Icons.stop_circle, color: scheme.error),
+              ),
           ],
         ),
       ),
